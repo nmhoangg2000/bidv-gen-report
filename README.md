@@ -35,14 +35,14 @@ LangGraph agentic pipeline + PostgreSQL + Docker cho việc tự động điền
 
 ### 1. Yêu cầu
 - Docker Desktop
-- Anthropic API key
+- OpenAI API key
 
 ### 2. Clone và cấu hình
 ```bash
 git clone <repo>
 cd bidv-agent
 cp .env.example .env
-# Mở .env, điền ANTHROPIC_API_KEY của bạn
+# Mở .env, điền OPENAI_API_KEY của bạn
 ```
 
 ### 3. Khởi động
