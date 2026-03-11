@@ -13,6 +13,21 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
+# ── LangSmith tracing ──────────────────────────────────────────────────────
+try:
+    from langchain_core.tracers.langchain import LangChainTracer
+    _ls_project = os.getenv("LANGCHAIN_PROJECT", "bidv-agent")
+    _ls_tracer  = LangChainTracer(project_name=_ls_project)
+    _ls_enabled = bool(os.getenv("LANGCHAIN_API_KEY"))
+    if _ls_enabled:
+        print(f"[LangSmith] Tracing enabled → project: {_ls_project}")
+except Exception as e:
+    _ls_tracer  = None
+    _ls_enabled = False
+    print(f"[LangSmith] Tracing disabled: {e}")
+
+def get_ls_callbacks():
+    return [_ls_tracer] if (_ls_enabled and _ls_tracer) else []
 
 def get_client() -> AsyncOpenAI:
     return AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
