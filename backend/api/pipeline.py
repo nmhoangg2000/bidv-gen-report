@@ -406,6 +406,106 @@ async def export_docx(
     )
 
 
+
+@router.get("/{run_id}/preview-html")
+async def preview_html(
+    run_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Convert filled .docx → HTML for in-browser preview."""
+    import subprocess, tempfile, os
+
+    run_row = await db.execute(text(
+        "SELECT template_id FROM pipeline_runs WHERE id = :id"
+    ), {"id": run_id})
+    run = run_row.mappings().first()
+    if not run:
+        raise HTTPException(404)
+
+    tmpl_row = await db.execute(text(
+        "SELECT filename, file_data FROM templates WHERE id = :id"
+    ), {"id": str(run["template_id"])})
+    tmpl = tmpl_row.mappings().first()
+    if not tmpl:
+        raise HTTPException(404, "Template not found")
+
+    results_row = await db.execute(text("""
+        SELECT fr.field_key, tf.para_idx, fr.final_value, fr.confidence
+        FROM field_results fr
+        JOIN template_fields tf ON tf.id = fr.field_id
+        WHERE fr.run_id = :rid
+    """), {"rid": run_id})
+    field_values = [dict(r) for r in results_row.mappings()]
+
+    if not field_values:
+        raise HTTPException(400, "No field results — run pipeline first")
+
+    try:
+        filled_bytes = fill_and_export(
+            bytes(tmpl["file_data"]),
+            field_values,
+            apply_colors=True,  # giữ màu highlight để phân biệt AI-filled
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Fill failed: {e}")
+
+    # Convert docx → HTML bằng pandoc
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx_path = os.path.join(tmp, "preview.docx")
+            html_path = os.path.join(tmp, "preview.html")
+            open(docx_path, "wb").write(filled_bytes)
+
+            result = subprocess.run(
+                ["pandoc", docx_path, "-o", html_path,
+                 "--standalone", "--embed-resources",
+                 "--metadata", "title=Preview",
+                 "--css=/dev/null"],
+                capture_output=True, timeout=30
+            )
+            if result.returncode != 0:
+                raise Exception(result.stderr.decode())
+
+            html = open(html_path, "r", encoding="utf-8").read()
+
+            # Inject A4 styling
+            inject_css = """<style>
+body{margin:0;padding:32px 48px;font-family:'Times New Roman',serif;
+  font-size:13pt;line-height:1.8;color:#111;background:#fff}
+p{margin:.4em 0}
+table{border-collapse:collapse;width:100%}
+td,th{border:1px solid #ccc;padding:6px 10px;font-size:12pt}
+h1,h2,h3{font-size:13pt;font-weight:bold}
+</style>"""
+            html = html.replace("</head>", inject_css + "</head>")
+
+    except FileNotFoundError:
+        # pandoc không có → fallback render đơn giản
+        from utils.docx_parser import extract_fields
+        fields_raw = extract_fields(bytes(tmpl["file_data"]))
+        val_map = {fv["field_key"]: fv.get("final_value","") for fv in field_values}
+        conf_map = {fv["field_key"]: fv.get("confidence","mid") for fv in field_values}
+
+        rows = []
+        for f in fields_raw:
+            key  = f["key"]
+            ctx  = f["context"]
+            val  = val_map.get(key, f["placeholder"])
+            conf = conf_map.get(key, "mid")
+            color = "#d1fae5" if conf=="high" else "#fee2e2" if conf=="low" else "#fef3c7"
+            border= "#059669" if conf=="high" else "#dc2626" if conf=="low" else "#d97706"
+            rows.append(f"""<p style="margin:10px 0">{ctx.replace(f["placeholder"],
+                f'<mark style="background:{color};border-bottom:2px solid {border};padding:1px 3px">{val}</mark>')}</p>""")
+
+        html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>body{{margin:0;padding:32px 48px;font-family:'Times New Roman',serif;
+font-size:13pt;line-height:1.8;color:#111;background:#fff}}</style></head>
+<body>{"".join(rows)}</body></html>"""
+
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
+
 # ─── Background task helpers ─────────────────────────────────────────────────
 
 async def _run_pipeline_steps(run_id: str, initial_state: PipelineState):
