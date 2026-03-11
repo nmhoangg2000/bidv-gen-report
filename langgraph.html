@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>LangGraph Agent — Nodes & Edges</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0f1117;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 60px;
+  color: #e2e8f0;
+}
+
+.title { text-align: center; margin-bottom: 48px; }
+.title h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.title h1 em { color: #4ade80; font-style: normal; }
+.title p { font-size: 11px; color: #475569; margin-top: 5px; font-family: 'Fira Code', monospace; }
+
+/* ── Graph canvas ── */
+.graph {
+  position: relative;
+  width: 780px;
+}
+
+svg.edges {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ── Nodes ── */
+.node {
+  position: absolute;
+  border-radius: 10px;
+  padding: 12px 18px;
+  border: 2px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: default;
+  transition: box-shadow .25s, transform .25s;
+  min-width: 130px;
+}
+.node:hover {
+  transform: scale(1.04);
+  z-index: 10;
+}
+
+.node-icon { font-size: 20px; margin-bottom: 5px; }
+.node-name { font-size: 11px; font-weight: 700; line-height: 1.3; }
+.node-sub  { font-size: 9px; margin-top: 3px; font-family: 'Fira Code', monospace; opacity: 0.75; }
+.node-type {
+  font-size: 8px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 2px 7px;
+  border-radius: 20px; margin-bottom: 6px;
+  display: inline-block;
+}
+
+/* START / END */
+.n-start {
+  background: #1a2744;
+  border-color: #3b82f6;
+  box-shadow: 0 0 16px rgba(59,130,246,.3);
+  left: 310px; top: 0px;
+}
+.n-start .node-name { color: #93c5fd; }
+
+.n-end {
+  background: #14291f;
+  border-color: #22c55e;
+  box-shadow: 0 0 16px rgba(34,197,94,.3);
+  left: 310px; top: 870px;
+}
+.n-end .node-name { color: #86efac; }
+
+/* Pipeline nodes */
+.n-analyze {
+  background: #1e1b3a;
+  border-color: #818cf8;
+  left: 310px; top: 110px;
+}
+.n-analyze .node-name { color: #c7d2fe; }
+.n-analyze .node-type { background: rgba(129,140,248,.15); color: #818cf8; }
+
+.n-extract {
+  background: #1e1b3a;
+  border-color: #818cf8;
+  left: 310px; top: 240px;
+}
+.n-extract .node-name { color: #c7d2fe; }
+.n-extract .node-type { background: rgba(129,140,248,.15); color: #818cf8; }
+
+.n-write {
+  background: #1e1b3a;
+  border-color: #818cf8;
+  left: 310px; top: 370px;
+}
+.n-write .node-name { color: #c7d2fe; }
+.n-write .node-type { background: rgba(129,140,248,.15); color: #818cf8; }
+
+/* OpenAI — side node */
+.n-openai {
+  background: #1f2513;
+  border-color: #84cc16;
+  left: 560px; top: 410px;
+}
+.n-openai .node-name { color: #bef264; }
+.n-openai .node-type { background: rgba(132,204,22,.12); color: #84cc16; }
+
+/* Memory — side node */
+.n-memory {
+  background: #1f1810;
+  border-color: #f59e0b;
+  left: 40px; top: 490px;
+}
+.n-memory .node-name { color: #fcd34d; }
+.n-memory .node-type { background: rgba(245,158,11,.12); color: #f59e0b; }
+
+/* Interrupt */
+.n-interrupt {
+  background: #1f1a0e;
+  border-color: #fcd34d;
+  border-style: dashed;
+  left: 310px; top: 495px;
+}
+.n-interrupt .node-name { color: #fde68a; }
+
+/* human review */
+.n-review {
+  background: #1e1b3a;
+  border-color: #818cf8;
+  left: 310px; top: 620px;
+}
+.n-review .node-name { color: #c7d2fe; }
+.n-review .node-type { background: rgba(129,140,248,.15); color: #818cf8; }
+
+/* export */
+.n-export {
+  background: #1e1b3a;
+  border-color: #818cf8;
+  left: 310px; top: 750px;
+}
+.n-export .node-name { color: #c7d2fe; }
+.n-export .node-type { background: rgba(129,140,248,.15); color: #818cf8; }
+
+/* DB — side node */
+.n-db {
+  background: #0d2015;
+  border-color: #4ade80;
+  left: 570px; top: 200px;
+}
+.n-db .node-name { color: #86efac; }
+.n-db .node-type { background: rgba(74,222,128,.1); color: #4ade80; }
+
+/* State */
+.n-state {
+  background: #1a1230;
+  border-color: #a855f7;
+  left: 30px; top: 330px;
+}
+.n-state .node-name { color: #d8b4fe; }
+.n-state .node-type { background: rgba(168,85,247,.12); color: #a855f7; }
+
+/* Edge labels */
+.edge-label {
+  font-size: 9px;
+  font-family: 'Fira Code', monospace;
+  fill: #64748b;
+}
+.edge-label-bg { fill: #0f1117; }
+
+/* Legend */
+.legend {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid #1e293b;
+  max-width: 780px; width: 100%;
+}
+.leg { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #64748b; }
+.leg-dot { width: 12px; height: 12px; border-radius: 3px; border: 2px solid; }
+</style>
+</head>
+<body>
+
+<div class="title">
+  <h1>LangGraph <em>StateGraph</em> — BIDV Agent</h1>
+  <p>Nodes · Edges · State · Interrupt · Memory</p>
+</div>
+
+<!-- ── GRAPH CANVAS ── -->
+<div class="graph" style="height:1000px">
+
+  <!-- SVG EDGES -->
+  <svg class="edges">
+    <defs>
+      <!-- Arrow markers -->
+      <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+      </marker>
+      <marker id="arr-yellow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#fcd34d"/>
+      </marker>
+      <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#4ade80"/>
+      </marker>
+      <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#a855f7"/>
+      </marker>
+      <marker id="arr-lime" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#84cc16"/>
+      </marker>
+      <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+      </marker>
+    </defs>
+
+    <!-- START → analyze_template -->
+    <line x1="375" y1="56" x2="375" y2="108" stroke="#3b82f6" stroke-width="2" marker-end="url(#arr-blue)"/>
+
+    <!-- analyze_template → extract_sources -->
+    <line x1="375" y1="200" x2="375" y2="238" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- extract_sources → write_fields -->
+    <line x1="375" y1="328" x2="375" y2="368" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- write_fields → OpenAI (curved right) -->
+    <path d="M 495 420 C 540 420 555 440 558 408" stroke="#84cc16" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-lime)"/>
+    <!-- OpenAI → write_fields return -->
+    <path d="M 558 412 C 555 460 540 460 495 440" stroke="#84cc16" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-lime)"/>
+
+    <!-- write_fields → INTERRUPT -->
+    <line x1="375" y1="458" x2="375" y2="493" stroke="#fcd34d" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-yellow)"/>
+
+    <!-- INTERRUPT → MemorySaver (left) -->
+    <path d="M 312 528 C 250 528 230 528 195 528" stroke="#f59e0b" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+    <!-- MemorySaver label -->
+
+    <!-- INTERRUPT → human_review (resume) -->
+    <line x1="375" y1="558" x2="375" y2="618" stroke="#fcd34d" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-yellow)"/>
+
+    <!-- human_review → export_doc -->
+    <line x1="375" y1="710" x2="375" y2="748" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- export_doc → END -->
+    <line x1="375" y1="836" x2="375" y2="868" stroke="#22c55e" stroke-width="2" marker-end="url(#arr-green)"/>
+
+    <!-- DB reads (analyze ← DB, extract ← DB) -->
+    <path d="M 568 230 C 555 210 510 185 495 165" stroke="#4ade80" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr-green)"/>
+    <path d="M 568 245 C 555 275 510 295 495 295" stroke="#4ade80" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr-green)"/>
+    <!-- write → DB -->
+    <path d="M 495 400 C 550 380 570 280 570 258" stroke="#4ade80" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr-green)"/>
+
+    <!-- State shared (left side) -->
+    <path d="M 160 380 C 240 350 270 330 310 175" stroke="#a855f7" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr-purple)"/>
+    <path d="M 155 395 C 240 400 270 415 310 415" stroke="#a855f7" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr-purple)"/>
+    <path d="M 155 410 C 240 480 270 580 310 655" stroke="#a855f7" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr-purple)"/>
+
+    <!-- Edge labels -->
+    <text x="386" y="88" class="edge-label">add_edge</text>
+    <text x="386" y="222" class="edge-label">add_edge</text>
+    <text x="386" y="352" class="edge-label">add_edge</text>
+    <text x="386" y="478" class="edge-label">interrupt</text>
+    <text x="386" y="592" class="edge-label">resume()</text>
+    <text x="386" y="732" class="edge-label">add_edge</text>
+    <text x="386" y="856" class="edge-label">add_edge → END</text>
+
+    <text x="520" y="397" class="edge-label" fill="#84cc16">ainvoke</text>
+    <text x="510" y="455" class="edge-label" fill="#84cc16">JSON</text>
+
+    <text x="200" y="520" class="edge-label" fill="#f59e0b">checkpoint</text>
+    <text x="590" y="218" class="edge-label" fill="#4ade80">READ</text>
+    <text x="590" y="300" class="edge-label" fill="#4ade80">READ</text>
+    <text x="590" y="375" class="edge-label" fill="#4ade80">WRITE</text>
+
+    <text x="60" y="350" class="edge-label" fill="#a855f7">PipelineState</text>
+    <text x="75" y="363" class="edge-label" fill="#a855f7">shared</text>
+  </svg>
+
+  <!-- ── NODES ── -->
+
+  <!-- START -->
+  <div class="node n-start" style="width:140px">
+    <div class="node-icon">▶</div>
+    <div class="node-name">START</div>
+    <div class="node-sub">graph entry</div>
+  </div>
+
+  <!-- analyze_template -->
+  <div class="node n-analyze" style="width:160px">
+    <div class="node-type">Node 1</div>
+    <div class="node-icon">🔍</div>
+    <div class="node-name">analyze_template</div>
+    <div class="node-sub">load fields · init state</div>
+  </div>
+
+  <!-- extract_sources -->
+  <div class="node n-extract" style="width:160px">
+    <div class="node-type">Node 2</div>
+    <div class="node-icon">📂</div>
+    <div class="node-name">extract_sources</div>
+    <div class="node-sub">load source docs · context</div>
+  </div>
+
+  <!-- write_fields -->
+  <div class="node n-write" style="width:160px">
+    <div class="node-type">Node 3</div>
+    <div class="node-icon">✍️</div>
+    <div class="node-name">write_fields</div>
+    <div class="node-sub">loop fields → GPT-4o</div>
+  </div>
+
+  <!-- OpenAI -->
+  <div class="node n-openai" style="width:140px">
+    <div class="node-type">External API</div>
+    <div class="node-icon">🤖</div>
+    <div class="node-name">OpenAI GPT-4o</div>
+    <div class="node-sub">JSON mode · async</div>
+  </div>
+
+  <!-- INTERRUPT -->
+  <div class="node n-interrupt" style="width:200px">
+    <div class="node-icon">⏸</div>
+    <div class="node-name">interrupt_before<br>["human_review"]</div>
+    <div class="node-sub">graph.ainvoke() returns</div>
+  </div>
+
+  <!-- MemorySaver -->
+  <div class="node n-memory" style="width:140px">
+    <div class="node-type">Checkpointer</div>
+    <div class="node-icon">💾</div>
+    <div class="node-name">MemorySaver</div>
+    <div class="node-sub">thread_id checkpoint</div>
+  </div>
+
+  <!-- State -->
+  <div class="node n-state" style="width:140px">
+    <div class="node-type">Shared</div>
+    <div class="node-icon">📦</div>
+    <div class="node-name">PipelineState</div>
+    <div class="node-sub">TypedDict · immutable</div>
+  </div>
+
+  <!-- DB -->
+  <div class="node n-db" style="width:140px">
+    <div class="node-type">Storage</div>
+    <div class="node-icon">🗄️</div>
+    <div class="node-name">PostgreSQL</div>
+    <div class="node-sub">templates · runs · results</div>
+  </div>
+
+  <!-- human_review -->
+  <div class="node n-review" style="width:160px">
+    <div class="node-type">Node 4</div>
+    <div class="node-icon">👁️</div>
+    <div class="node-name">human_review</div>
+    <div class="node-sub">merge edits · final_value</div>
+  </div>
+
+  <!-- export_doc -->
+  <div class="node n-export" style="width:160px">
+    <div class="node-type">Node 5</div>
+    <div class="node-icon">📦</div>
+    <div class="node-name">export_doc</div>
+    <div class="node-sub">fill XML · rezip → .docx</div>
+  </div>
+
+  <!-- END -->
+  <div class="node n-end" style="width:140px">
+    <div class="node-icon">⏹</div>
+    <div class="node-name">END</div>
+    <div class="node-sub">status = done</div>
+  </div>
+
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="leg">
+    <div class="leg-dot" style="background:#1e1b3a;border-color:#818cf8"></div>
+    LangGraph Node
+  </div>
+  <div class="leg">
+    <div class="leg-dot" style="background:#1f2513;border-color:#84cc16"></div>
+    External API
+  </div>
+  <div class="leg">
+    <div class="leg-dot" style="background:#0d2015;border-color:#4ade80"></div>
+    Storage (PostgreSQL)
+  </div>
+  <div class="leg">
+    <div class="leg-dot" style="background:#1f1810;border-color:#f59e0b"></div>
+    Checkpointer (MemorySaver)
+  </div>
+  <div class="leg">
+    <div class="leg-dot" style="background:#1a1230;border-color:#a855f7"></div>
+    PipelineState (shared)
+  </div>
+  <div class="leg">
+    <div class="leg-dot" style="background:#1f1a0e;border-color:#fcd34d;border-style:dashed"></div>
+    Interrupt Point
+  </div>
+  <div class="leg" style="gap:10px">
+    <svg width="30" height="10"><line x1="0" y1="5" x2="25" y2="5" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/></svg>
+    add_edge (fixed)
+  </div>
+  <div class="leg">
+    <svg width="30" height="10"><line x1="0" y1="5" x2="25" y2="5" stroke="#fcd34d" stroke-width="2" stroke-dasharray="4,2"/></svg>
+    interrupt / resume
+  </div>
+  <div class="leg">
+    <svg width="30" height="10"><line x1="0" y1="5" x2="25" y2="5" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="3,2"/></svg>
+    state shared
+  </div>
+</div>
+
+
+<!-- Description section -->
+<div style="max-width:780px;width:100%;margin-top:40px;display:flex;flex-direction:column;gap:14px">
+
+  <div style="background:#0d1117;border:1px solid #1e293b;border-left:3px solid #6366f1;border-radius:0 10px 10px 0;padding:18px 22px">
+    <div style="font-size:11px;font-weight:700;color:#818cf8;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">① StateGraph — Cấu trúc Graph</div>
+    <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+      LangGraph định nghĩa pipeline dưới dạng <strong style="color:#c7d2fe">StateGraph</strong> — một đồ thị có hướng (DAG) gồm các <strong style="color:#c7d2fe">Nodes</strong> (hàm xử lý) và <strong style="color:#c7d2fe">Edges</strong> (luồng chuyển tiếp).
+      Toàn bộ dữ liệu được gom vào một object duy nhất là <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#a78bfa">PipelineState (TypedDict)</code> — mỗi node nhận state cũ, trả về dict chứa các field cần cập nhật, LangGraph tự merge.
+      Không có biến global, không có side effect ngoài DB — mỗi bước hoàn toàn độc lập.
+    </div>
+  </div>
+
+  <div style="background:#0d1117;border:1px solid #1e293b;border-left:3px solid #f59e0b;border-radius:0 10px 10px 0;padding:18px 22px">
+    <div style="font-size:11px;font-weight:700;color:#fbbf24;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">② interrupt_before — Human-in-the-loop</div>
+    <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+      Graph được compile với tham số <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">interrupt_before=["human_review"]</code>.
+      Khi pipeline chạy đến đây, <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">graph.ainvoke()</code> tự động return về mà không chạy <em>human_review</em>.
+      Frontend polling phát hiện <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">status="reviewing"</code> → hiển thị UI review.
+      Khi người dùng Phê duyệt, backend gọi <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">graph.ainvoke(human_edits, thread_id=run_id)</code> — graph resume đúng từ điểm bị dừng, không chạy lại các node trước.
+    </div>
+  </div>
+
+  <div style="background:#0d1117;border:1px solid #1e293b;border-left:3px solid #f59e0b;border-radius:0 10px 10px 0;padding:18px 22px">
+    <div style="font-size:11px;font-weight:700;color:#fbbf24;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">③ MemorySaver — Checkpoint</div>
+    <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+      <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">MemorySaver</code> là checkpointer mặc định — lưu toàn bộ <strong style="color:#fde68a">PipelineState tại thời điểm interrupt</strong> vào RAM, key bởi <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">thread_id = run_id</code>.
+      Khi resume, LangGraph load lại checkpoint, merge thêm <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">human_edits</code> vào state rồi tiếp tục chạy từ node_4.
+      <strong style="color:#fbbf24">Lưu ý:</strong> MemorySaver lưu trong RAM — nếu container restart, các run đang <em>"reviewing"</em> sẽ mất state. Nâng cấp lên <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#fcd34d">PostgresSaver</code> để persistent.
+    </div>
+  </div>
+
+  <div style="background:#0d1117;border:1px solid #1e293b;border-left:3px solid #84cc16;border-radius:0 10px 10px 0;padding:18px 22px">
+    <div style="font-size:11px;font-weight:700;color:#a3e635;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">④ Node 3 — write_fields · OpenAI loop</div>
+    <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+      Node 3 là node nặng nhất — lặp tuần tự qua từng field tô vàng, gọi <strong style="color:#bef264">OpenAI GPT-4o</strong> với <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#a3e635">response_format={"type":"json_object"}</code>.
+      Mỗi lần gọi truyền vào: system prompt quy tắc văn phong + ngữ cảnh đoạn văn + placeholder + tối đa 14.000 ký tự tài liệu nguồn.
+      GPT-4o trả về <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#a3e635">{"value", "confidence", "reason"}</code> — confidence do AI tự đánh giá dựa trên mức độ tìm thấy thông tin trong tài liệu nguồn.
+    </div>
+  </div>
+
+  <div style="background:#0d1117;border:1px solid #1e293b;border-left:3px solid #4ade80;border-radius:0 10px 10px 0;padding:18px 22px">
+    <div style="font-size:11px;font-weight:700;color:#4ade80;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">⑤ PostgreSQL — READ / WRITE tại từng node</div>
+    <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+      Database được truy cập trực tiếp từ các nodes qua <code style="background:#1e293b;padding:1px 6px;border-radius:3px;font-size:11px;color:#86efac">asyncpg</code> — không đi qua LangGraph state để tránh state quá nặng.
+      Node 1 READ <em>template_fields</em> → Node 2 READ <em>source_documents</em> → Node 3 WRITE <em>field_results</em> → Node 4 UPDATE <em>field_results.final_value</em> → Node 5 READ <em>templates.file_data (BYTEA)</em>.
+      File <code>.docx</code> gốc được lưu dưới dạng BYTEA trong DB, đảm bảo mỗi lần export đều dùng template nguyên bản.
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIDV Report AI Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f0f2f5;--bg2:#e8eaed;--bg3:#ffffff;--surface:#ffffff;--surface2:#f0f2f5;
+  --accent:#0078d4;--accent2:#005a9e;--gold:#ca7700;--green:#107c10;--red:#d13438;
+  --purple:#5c2d91;--purple2:#4b2470;
+  --text:#1a1a1a;--text2:#3d3d3d;--text3:#767676;
+  --border:rgba(0,120,212,.15);--border2:rgba(0,0,0,.1);
+  --r:4px;--rs:3px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;
+  background-image:none;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:0 40px;flex:1}
+
+header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-bottom:1px solid var(--border2);margin-bottom:28px}
+.logo{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:var(--rs);display:flex;align-items:center;justify-content:center;
+  font-size:22px;box-shadow:0 0 20px rgba(0,180,216,.3);flex-shrink:0}
+.htext h1{font-size:19px;font-weight:700;
+  color:#1a1a1a;-webkit-text-fill-color:#1a1a1a}
+.htext p{font-size:12px;color:var(--text3);margin-top:2px}
+.badge{margin-left:auto;display:flex;gap:8px;align-items:center}
+.badge span{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);
+  color:var(--purple);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.5px}
+.badge .dot-live{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}
+.sidebar{position:sticky;top:20px;display:flex;flex-direction:column;gap:14px}
+.slabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px}
+
+/* Template cards */
+.tmpl-list{display:flex;flex-direction:column;gap:6px}
+.tmpl-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
+  padding:12px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.tmpl-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--accent);opacity:0;transition:opacity .2s}
+.tmpl-card:hover{border-color:var(--border);background:var(--surface)}
+.tmpl-card.active{border-color:rgba(0,180,216,.3);background:var(--surface)}
+.tmpl-card.active::before{opacity:1}
+.tmpl-del{position:absolute;top:8px;right:8px;width:22px;height:22px;
+  background:rgba(239,71,111,0);border:none;color:var(--text3);border-radius:4px;
+  cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:all .15s;z-index:2}
+.tmpl-card:hover .tmpl-del{opacity:1;background:rgba(239,71,111,.12);color:var(--red)}
+.tmpl-del:hover{background:rgba(239,71,111,.25) !important}
+.tn{font-size:9px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+.tm{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+.td{font-size:10px;color:var(--text3);margin-top:2px}
+.tf{margin-top:5px;display:inline-flex;align-items:center;gap:3px;
+  background:rgba(244,162,89,.1);border:1px solid rgba(244,162,89,.2);
+  color:var(--gold);font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px}
+
+/* Upload zone */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--rs);padding:22px;text-align:center;
+  cursor:pointer;transition:all .2s}
+.upload-zone:hover,.upload-zone.drag{border-color:rgba(139,92,246,.5);background:rgba(139,92,246,.05)}
+.upload-zone input{display:none}
+.file-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{display:flex;align-items:center;gap:5px;background:var(--surface);
+  border:1px solid var(--border2);border-radius:5px;padding:4px 9px;font-size:10px;color:var(--text2)}
+.chip .rm{cursor:pointer;color:var(--text3)}
+.chip .rm:hover{color:var(--red)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 15px;border-radius:var(--rs);
+  font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;border:none;transition:all .2s}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--border);color:var(--text);background:var(--bg3)}
+.btn-ai{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;box-shadow:0 0 14px rgba(139,92,246,.25)}
+.btn-ai:hover:not(:disabled){box-shadow:0 0 22px rgba(139,92,246,.45);transform:translateY(-1px)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 14px rgba(0,180,216,.25)}
+.btn-primary:hover:not(:disabled){box-shadow:0 0 22px rgba(0,180,216,.45);transform:translateY(-1px)}
+.btn-green{background:linear-gradient(135deg,#059669,#065f46);color:#fff}
+.btn-green:hover:not(:disabled){box-shadow:0 0 20px rgba(6,214,160,.35);transform:translateY(-1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important;box-shadow:none !important}
+
+/* Pipeline steps */
+.pipeline{display:flex;flex-direction:column;gap:14px}
+.step{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);overflow:hidden;transition:border-color .3s}
+.step.active{border-color:rgba(139,92,246,.4)}
+.step.done{border-color:rgba(6,214,160,.3)}
+.step.err{border-color:rgba(239,71,111,.35)}
+.step.waiting{border-color:rgba(244,162,89,.35)}
+
+.step-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px}
+.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;
+  background:var(--bg);border:1px solid var(--border2);color:var(--text3);flex-shrink:0;transition:all .3s}
+.step.active .step-num{background:rgba(139,92,246,.2);border-color:var(--purple);color:var(--purple)}
+.step.done .step-num{background:rgba(6,214,160,.15);border-color:var(--green);color:var(--green)}
+.step.err .step-num{background:rgba(239,71,111,.15);border-color:var(--red);color:var(--red)}
+.step.waiting .step-num{background:rgba(244,162,89,.1);border-color:var(--gold);color:var(--gold)}
+.step-info{flex:1}.step-name{font-size:13px;font-weight:600}.step-desc{font-size:11px;color:var(--text3);margin-top:1px}
+.sbadge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px}
+.sb-idle{background:var(--bg);border:1px solid var(--border2);color:var(--text3)}
+.sb-run{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:var(--purple)}
+.sb-done{background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.25);color:var(--green)}
+.sb-err{background:rgba(239,71,111,.1);border:1px solid rgba(239,71,111,.25);color:var(--red)}
+.sb-wait{background:rgba(244,162,89,.1);border:1px solid rgba(244,162,89,.2);color:var(--gold)}
+
+.step-body{padding:0 18px 16px;display:none}
+.step.active .step-body,.step.done .step-body,.step.err .step-body,.step.waiting .step-body{display:block}
+
+/* Progress bar */
+.pbar{height:3px;background:var(--border2);border-radius:2px;margin:10px 0;overflow:hidden}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--accent));transition:width .4s}
+
+/* Source previews */
+.src-preview{background:var(--bg);border:1px solid var(--border2);border-radius:6px;
+  padding:8px 10px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;
+  max-height:100px;overflow-y:auto;margin-top:6px;white-space:pre-wrap;line-height:1.6}
+
+/* Log */
+.log{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);
+  padding:8px 10px;font-size:10px;font-family:'JetBrains Mono',monospace;
+  max-height:140px;overflow-y:auto;color:var(--text2);line-height:1.9;margin-top:8px}
+.ok{color:var(--green)}.warn{color:var(--gold)}.info{color:var(--accent)}.err{color:var(--red)}
+
+/* Review */
+.sum-bar{display:flex;gap:14px;padding:8px 12px;background:var(--surface);border-radius:var(--rs);margin-bottom:12px;flex-wrap:wrap}
+.sum-stat{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rev-list{display:flex;flex-direction:column;gap:8px}
+.rev-item{background:var(--bg);border:1px solid var(--border2);border-left:3px solid transparent;
+  border-radius:var(--rs);padding:10px 12px}
+.rev-item.h{border-left-color:var(--green)}
+.rev-item.m{border-left-color:var(--gold)}
+.rev-item.l{border-left-color:var(--red)}
+.rev-top{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+.rev-idx{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--accent);
+  background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.2);padding:1px 5px;border-radius:3px;flex-shrink:0;margin-top:1px}
+.rev-ctx{font-size:11px;color:var(--text3);flex:1;line-height:1.5}
+.rev-conf{font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;flex-shrink:0}
+.h .rev-conf{background:rgba(6,214,160,.1);color:var(--green)}
+.m .rev-conf{background:rgba(244,162,89,.1);color:var(--gold)}
+.l .rev-conf{background:rgba(239,71,111,.1);color:var(--red)}
+.rev-ta{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
+  color:var(--text);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;
+  padding:7px 9px;resize:vertical;min-height:50px;outline:none;transition:border-color .2s;line-height:1.5}
+.rev-ta:focus{border-color:rgba(0,180,216,.4)}
+.rev-reason{font-size:10px;color:var(--text3);margin-top:4px;font-style:italic}
+
+/* Run history */
+.run-list{display:flex;flex-direction:column;gap:6px}
+.run-item{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
+  padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s}
+.run-item:hover{border-color:var(--border);background:var(--surface)}
+.run-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3)}
+.run-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.rs-done{background:rgba(6,214,160,.1);color:var(--green);border:1px solid rgba(6,214,160,.2)}
+.rs-reviewing{background:rgba(244,162,89,.1);color:var(--gold);border:1px solid rgba(244,162,89,.2)}
+.rs-error{background:rgba(239,71,111,.1);color:var(--red);border:1px solid rgba(239,71,111,.2)}
+.rs-other{background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.2)}
+
+/* Sidebar tabs */
+.sidebar-tabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border2)}
+.stab{flex:1;padding:7px 4px;font-size:10px;font-weight:700;text-align:center;
+  cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;
+  transition:all .15s;letter-spacing:.5px;text-transform:uppercase}
+.stab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.stab:hover:not(.active){color:var(--text2)}
+
+/* Source docs list */
+.src-list{display:flex;flex-direction:column;gap:6px}
+.src-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
+  padding:10px 12px;cursor:default;transition:all .2s;position:relative}
+.src-card:hover{border-color:var(--border)}
+.src-name{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.src-meta{font-size:9px;color:var(--text3);font-family:monospace}
+.src-del{position:absolute;top:8px;right:8px;background:none;border:none;
+  color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:all .15s}
+.src-card:hover .src-del{opacity:1}
+.src-del:hover{color:var(--red) !important}
+
+/* Checkbox list in step 2 */
+.src-check-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
+  cursor:pointer;transition:all .15s}
+.src-check-item:hover{border-color:var(--accent);background:var(--surface)}
+.src-check-item.selected{border-color:var(--accent);background:rgba(0,119,182,.07)}
+.src-check-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);
+  flex-shrink:0;margin-top:1px;cursor:pointer}
+.src-check-name{font-size:11px;font-weight:600;color:var(--text2)}
+.src-check-meta{font-size:9px;color:var(--text3);margin-top:1px;font-family:monospace}
+.src-group-label{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1px;
+  text-transform:uppercase;margin:10px 0 5px;padding-left:2px}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--rs);padding:10px 16px;font-size:12px;font-weight:500;z-index:1000;
+  display:flex;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(0,0,0,.5);
+  animation:slideUp .3s ease;max-width:360px}
+.toast.success{border-color:rgba(6,214,160,.4);color:var(--green)}
+.toast.error{border-color:rgba(239,71,111,.4);color:var(--red)}
+.toast.info{border-color:rgba(0,180,216,.3);color:var(--accent)}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── Monitor Panel ── */
+#monitorPanel{margin-top:18px;background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r);overflow:hidden}
+.mon-header{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border2)}
+.mon-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;
+  display:flex;align-items:center;gap:7px}
+.mon-tabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:4px;overflow:hidden}
+.mon-tab{padding:4px 12px;font-size:10px;font-weight:600;cursor:pointer;color:var(--text3);
+  background:var(--bg3);transition:all .15s;letter-spacing:.3px}
+.mon-tab.active{background:var(--accent);color:#fff}
+.mon-body{padding:14px 16px;min-height:180px}
+
+/* Graph */
+.lg-graph{display:flex;flex-direction:column;align-items:center;gap:0;position:relative}
+.lg-node{display:flex;align-items:center;justify-content:space-between;
+  width:260px;padding:8px 14px;border-radius:6px;border:1.5px solid var(--border2);
+  background:var(--bg3);font-size:11px;font-weight:600;color:var(--text2);
+  transition:all .3s;position:relative;z-index:1}
+.lg-node.active{border-color:var(--accent);background:rgba(0,119,182,.08);color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,119,182,.15)}
+.lg-node.done{border-color:var(--green);background:rgba(6,214,160,.07);color:var(--green)}
+.lg-node.interrupt{border-color:var(--gold);background:rgba(244,162,89,.08);color:var(--gold)}
+.lg-node.error{border-color:var(--red);background:rgba(239,71,111,.08);color:var(--red)}
+.lg-node .node-icon{font-size:14px;width:20px;text-align:center}
+.lg-node .node-label{flex:1;padding:0 10px}
+.lg-node .node-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px}
+.nb-done{background:rgba(6,214,160,.15);color:var(--green)}
+.nb-active{background:rgba(0,119,182,.15);color:var(--accent);animation:pulse-badge 1.5s infinite}
+.nb-wait{background:rgba(244,162,89,.15);color:var(--gold)}
+.nb-idle{background:var(--bg2);color:var(--text3)}
+.nb-err{background:rgba(239,71,111,.15);color:var(--red)}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.4}}
+.lg-edge{width:2px;height:20px;background:var(--border2);margin:0 auto;position:relative;z-index:0}
+.lg-edge.done-edge{background:var(--green)}
+.lg-edge.active-edge{background:var(--accent);animation:flow-edge 1s linear infinite}
+@keyframes flow-edge{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}
+.lg-interrupt-badge{width:260px;padding:4px 14px;border-radius:4px;
+  background:rgba(244,162,89,.12);border:1px dashed var(--gold);
+  font-size:9px;font-weight:700;color:var(--gold);letter-spacing:.5px;text-align:center}
+.lg-start,.lg-end{width:80px;padding:5px;border-radius:50px;font-size:10px;font-weight:700;
+  text-align:center;letter-spacing:.5px}
+.lg-start{background:rgba(139,92,246,.1);border:1.5px solid var(--purple);color:var(--purple)}
+.lg-end{background:rgba(6,214,160,.1);border:1.5px solid var(--green);color:var(--green)}
+
+/* Timeline */
+.tl-list{display:flex;flex-direction:column;gap:0;font-size:11px}
+.tl-item{display:flex;gap:12px;padding:6px 0;border-left:2px solid var(--border2);
+  padding-left:14px;position:relative}
+.tl-item:before{content:'';position:absolute;left:-5px;top:10px;width:8px;height:8px;
+  border-radius:50%;background:var(--border2)}
+.tl-item.tl-done:before{background:var(--green)}
+.tl-item.tl-active:before{background:var(--accent);animation:pulse-badge 1.5s infinite;
+  box-shadow:0 0 0 3px rgba(0,119,182,.2)}
+.tl-item.tl-wait:before{background:var(--gold)}
+.tl-item.tl-err:before{background:var(--red)}
+.tl-time{font-family:monospace;font-size:9px;color:var(--text3);white-space:nowrap;min-width:42px;margin-top:1px}
+.tl-content{flex:1}
+.tl-label{font-weight:600;color:var(--text2)}
+.tl-desc{font-size:10px;color:var(--text3);margin-top:1px}
+
+/* State Inspector */
+.state-kv{display:flex;flex-direction:column;gap:4px}
+.state-row{display:flex;gap:8px;align-items:flex-start;padding:5px 8px;
+  background:var(--bg);border-radius:4px;font-size:11px}
+.state-key{font-family:monospace;font-size:10px;color:var(--accent);min-width:140px;flex-shrink:0;margin-top:1px}
+.state-val{color:var(--text2);font-size:10px;font-family:monospace;word-break:break-all;
+  max-height:40px;overflow:hidden;text-overflow:ellipsis}
+.state-val.expand{max-height:none}
+
+.spin{width:12px;height:12px;border:2px solid rgba(139,92,246,.3);border-top-color:var(--purple);
+  border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">🤖</div>
+  <div class="htext">
+    <h1>BIDV Report AI Agent</h1>
+    <p>LangGraph Pipeline · PostgreSQL · Docker</p>
+  </div>
+  <div class="badge">
+    <div class="dot-live" id="serverDot" title="Server status"></div>
+    <span>LangGraph v2</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+    <!-- Tabs -->
+    <div class="sidebar-tabs">
+      <div class="stab active" id="tab-tmpl" onclick="switchSidebarTab('tmpl')">📋 Templates</div>
+      <div class="stab" id="tab-src" onclick="switchSidebarTab('src')">📂 Tài liệu</div>
+      <div class="stab" id="tab-runs" onclick="switchSidebarTab('runs')">🕒 Lịch sử</div>
+    </div>
+
+    <!-- Panel: Templates -->
+    <div id="panel-tmpl">
+      <div class="tmpl-list" id="tmplList">
+        <div style="color:var(--text3);font-size:11px;padding:8px">Đang tải...</div>
+      </div>
+    </div>
+
+    <!-- Panel: Tài liệu nguồn -->
+    <div id="panel-src" style="display:none">
+      <div class="src-list" id="srcList">
+        <div style="color:var(--text3);font-size:11px;padding:8px">Đang tải...</div>
+      </div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:8px;justify-content:center;font-size:11px"
+        onclick="showUploadSource()">+ Upload Tài liệu nguồn</button>
+    </div>
+
+    <!-- Panel: Lịch sử -->
+    <div id="panel-runs" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="slabel" style="margin-bottom:0">Lịch sử runs</div>
+        <button onclick="clearAllRuns()" title="Xóa toàn bộ lịch sử"
+          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;
+          padding:2px 6px;border-radius:4px;transition:all .15s"
+          onmouseover="this.style.color='var(--red)';this.style.background='rgba(239,71,111,.1)'"
+          onmouseout="this.style.color='var(--text3)';this.style.background='none'">
+          🗑 Xóa hết
+        </button>
+      </div>
+      <div class="run-list" id="runList">
+        <div style="color:var(--text3);font-size:11px;padding:4px">Chưa có run nào</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main content ── -->
+  <div id="mainContent">
+    <div style="text-align:center;padding:60px 20px;color:var(--text3)">
+      <div style="font-size:42px;margin-bottom:14px">🤖</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:8px">Chọn một template để bắt đầu</div>
+      <div style="font-size:12px;max-width:380px;margin:0 auto;line-height:1.7">
+        Pipeline sẽ tự động: phân tích template → trích xuất tài liệu nguồn → AI điền nội dung → bạn review → xuất file
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /wrap -->
+
+<script>
+const API = '/api';   // proxied by Nginx
+let templates   = [];
+let selTmplId   = null;
+let currentRun  = null;
+let pollTimer   = null;
+let pendingFiles= [];
+let uploadedSrcIds = [];
+let uploadedDocs   = [];
+
+// ═══════════════════════════════════════════════════════════
+// LANGGRAPH MONITOR
+// ═══════════════════════════════════════════════════════════
+
+const GRAPH_NODES = [
+  { id: 'analyze_template', label: 'Phân tích Template',   icon: '🔍', interrupt: false },
+  { id: 'upload_sources',   label: 'Upload Tài liệu',      icon: '📂', interrupt: false },
+  { id: 'extract_sources',  label: 'Trích xuất Văn bản',   icon: '✂️',  interrupt: true  },
+  { id: 'write_fields',     label: 'AI Điền Nội dung',     icon: '✍️',  interrupt: false },
+  { id: 'human_review',     label: 'Human Review',         icon: '👁️',  interrupt: true  },
+  { id: 'export_doc',       label: 'Xuất Báo cáo',         icon: '📄', interrupt: false },
+];
+
+const STATUS_NODE_MAP = {
+  'created':         null,
+  'analyzing':       'analyze_template',
+  'awaiting_upload': 'upload_sources',
+  'uploading':       'upload_sources',
+  'awaiting_extract':'extract_sources',
+  'extracting':      'extract_sources',
+  'writing':         'write_fields',
+  'reviewing':       'human_review',
+  'approved':        'human_review',
+  'exporting':       'export_doc',
+  'done':            'export_doc',
+  'error':           null,
+};
+
+const DONE_STATUSES = ['reviewing','approved','exporting','done'];
+const DONE_NODES_MAP = {
+  'analyzing':        [],
+  'awaiting_upload':  ['analyze_template'],
+  'uploading':        ['analyze_template'],
+  'awaiting_extract': ['analyze_template','upload_sources'],
+  'extracting':       ['analyze_template','upload_sources'],
+  'writing':          ['analyze_template','upload_sources','extract_sources'],
+  'reviewing':        ['analyze_template','upload_sources','extract_sources','write_fields'],
+  'approved':         ['analyze_template','upload_sources','extract_sources','write_fields'],
+  'exporting':        ['analyze_template','upload_sources','extract_sources','write_fields','human_review'],
+  'done':             ['analyze_template','upload_sources','extract_sources','write_fields','human_review','export_doc'],
+};
+
+let monitorData = { status: null, timeline: [], stateSnap: {} };
+let monTab = 'graph';
+let monitorTimer = null;
+
+function switchMonTab(tab) {
+  ['graph','timeline','state'].forEach(t => {
+    document.getElementById(`mtab-${t}`)?.classList.toggle('active', t === tab);
+    const el = document.getElementById(`mon-${t}`);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  monTab = tab;
+  renderMonTab();
+}
+
+function showMonitor(runId) {
+  const panel = document.getElementById('monitorPanel');
+  if (!panel) return;
+  panel.style.display = 'block';
+  const rid = document.getElementById('monRunId');
+  if (rid) rid.textContent = runId ? `#${runId.substring(0,8)}` : '';
+  startMonitorPolling(runId);
+}
+
+function hideMonitor() {
+  stopMonitorPolling();
+  const panel = document.getElementById('monitorPanel');
+  if (panel) panel.style.display = 'none';
+}
+
+function startMonitorPolling(runId) {
+  stopMonitorPolling();
+  monitorData.timeline = [];
+  monitorData.stateSnap = {};
+  pollMonitor(runId);
+  monitorTimer = setInterval(() => pollMonitor(runId), 2000);
+}
+
+function stopMonitorPolling() {
+  if (monitorTimer) { clearInterval(monitorTimer); monitorTimer = null; }
+}
+
+async function pollMonitor(runId) {
+  if (!runId) return;
+  try {
+    const r = await fetch(`${API}/pipeline/${runId}`);
+    if (!r.ok) return;
+    const run = await r.json();
+
+    // Update dot color
+    const dot = document.getElementById('monDot');
+    if (dot) {
+      dot.style.background = run.status === 'done' ? 'var(--green)'
+        : run.status === 'error' ? 'var(--red)'
+        : run.status?.startsWith('awaiting') ? 'var(--gold)'
+        : 'var(--accent)';
+      dot.style.animation = ['done','error'].includes(run.status) ? 'none' : 'pulse-dot 1.5s infinite';
+    }
+
+    // Build timeline entry
+    const now = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const last = monitorData.timeline[monitorData.timeline.length - 1];
+    if (!last || last.status !== run.status) {
+      const stepLabels = {
+        created:'Pipeline khởi tạo', analyzing:'Đang phân tích template',
+        awaiting_upload:'Chờ upload tài liệu', uploading:'Đang upload',
+        awaiting_extract:'Chờ xác nhận trích xuất', extracting:'Đang trích xuất văn bản',
+        writing:'AI đang điền nội dung', reviewing:'Chờ human review',
+        approved:'Đã duyệt — đang xuất', exporting:'Đang xuất file',
+        done:'✅ Hoàn thành', error:'❌ Lỗi xảy ra',
+      };
+      monitorData.timeline.push({
+        time: now, status: run.status,
+        label: stepLabels[run.status] || run.status,
+        step: run.current_step,
+      });
+    }
+
+    // State snapshot
+    monitorData.stateSnap = {
+      run_id:       runId,
+      status:       run.status,
+      current_step: run.current_step,
+      template_id:  run.template_id,
+      updated_at:   run.updated_at,
+      error:        run.error_message || null,
+    };
+    monitorData.status = run.status;
+
+    renderMonTab();
+
+    if (['done','error'].includes(run.status)) stopMonitorPolling();
+  } catch {}
+}
+
+function renderMonTab() {
+  if (monTab === 'graph')    renderMonGraph();
+  if (monTab === 'timeline') renderMonTimeline();
+  if (monTab === 'state')    renderMonState();
+}
+
+function renderMonGraph() {
+  const el = document.getElementById('mon-graph');
+  if (!el) return;
+  const status    = monitorData.status;
+  const activeNode = STATUS_NODE_MAP[status] || null;
+  const doneNodes  = DONE_NODES_MAP[status]  || [];
+
+  let html = `<div class="lg-graph" style="padding:10px 0">`;
+  html += `<div class="lg-start">START</div>`;
+
+  GRAPH_NODES.forEach((node, i) => {
+    const isDone   = doneNodes.includes(node.id);
+    const isActive = node.id === activeNode;
+    const isWait   = node.interrupt && isActive && status?.startsWith('awaiting');
+    const isErr    = status === 'error' && isActive;
+
+    const cls = isErr ? 'error' : isWait ? 'interrupt' : isActive ? 'active' : isDone ? 'done' : '';
+    const badge = isErr ? '<span class="node-badge nb-err">ERROR</span>'
+      : isWait    ? '<span class="node-badge nb-wait">⏸ WAIT</span>'
+      : isActive  ? '<span class="node-badge nb-active">● RUN</span>'
+      : isDone    ? '<span class="node-badge nb-done">✓</span>'
+      :             '<span class="node-badge nb-idle">idle</span>';
+
+    // Edge before node
+    const edgeCls = isDone || isActive ? 'done-edge' : '';
+    if (i > 0) html += `<div class="lg-edge ${edgeCls}"></div>`;
+
+    // Interrupt label before node
+    if (node.interrupt && !isDone && !isActive) {
+      html += `<div class="lg-interrupt-badge">⏸ INTERRUPT POINT</div>`;
+      html += `<div class="lg-edge"></div>`;
+    } else if (node.interrupt && (isWait)) {
+      html += `<div class="lg-interrupt-badge" style="border-color:var(--gold);animation:pulse-badge 1.5s infinite">⏸ ĐANG CHỜ XÁC NHẬN</div>`;
+      html += `<div class="lg-edge active-edge"></div>`;
+    }
+
+    html += `<div class="lg-node ${cls}">
+      <span class="node-icon">${node.icon}</span>
+      <span class="node-label">${node.label}</span>
+      ${badge}
+    </div>`;
+  });
+
+  const endDone = status === 'done';
+  html += `<div class="lg-edge ${endDone ? 'done-edge' : ''}"></div>`;
+  html += `<div class="lg-end" style="${endDone ? 'border-color:var(--green);color:var(--green);background:rgba(6,214,160,.15)' : ''}">END</div>`;
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
+
+function renderMonTimeline() {
+  const el = document.getElementById('mon-timeline');
+  if (!el) return;
+  if (!monitorData.timeline.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:10px">Chưa có sự kiện nào.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="tl-list">' +
+    monitorData.timeline.map((item, i) => {
+      const isLast = i === monitorData.timeline.length - 1;
+      const cls = item.status === 'done' ? 'tl-done'
+        : item.status === 'error' ? 'tl-err'
+        : item.status?.startsWith('awaiting') ? 'tl-wait'
+        : isLast ? 'tl-active' : 'tl-done';
+      return `<div class="tl-item ${cls}">
+        <div class="tl-time">${item.time}</div>
+        <div class="tl-content">
+          <div class="tl-label">${item.label}</div>
+          <div class="tl-desc">Step ${item.step} · status: <code>${item.status}</code></div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  // Scroll to bottom
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderMonState() {
+  const el = document.getElementById('mon-state');
+  if (!el) return;
+  const snap = monitorData.stateSnap;
+  if (!Object.keys(snap).length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:10px">Chưa có dữ liệu state.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="state-kv">' +
+    Object.entries(snap).filter(([,v]) => v !== null && v !== undefined).map(([k, v]) => `
+      <div class="state-row">
+        <span class="state-key">${k}</span>
+        <span class="state-val">${typeof v === 'object' ? JSON.stringify(v) : v}</span>
+      </div>`
+    ).join('') + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR TABS
+// ═══════════════════════════════════════════════════════════
+function switchSidebarTab(tab) {
+  ['tmpl','src','runs'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t===tab);
+    document.getElementById(`panel-${t}`).style.display = t===tab ? 'block' : 'none';
+  });
+  if (tab === 'src') loadSourceDocs();
+  if (tab === 'runs') loadRuns();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SOURCE DOCS MANAGEMENT (Sidebar panel)
+// ═══════════════════════════════════════════════════════════
+let allSourceDocs = [];
+
+async function loadSourceDocs() {
+  try {
+    const r = await fetch(`${API}/sources`);
+    if (!r.ok) return;
+    allSourceDocs = await r.json();
+    renderSrcList();
+  } catch {}
+}
+
+function renderSrcList() {
+  const el = document.getElementById('srcList');
+  if (!allSourceDocs.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">Chưa có tài liệu nào trong DB.</div>';
+    return;
+  }
+  el.innerHTML = allSourceDocs.map(d => `
+    <div class="src-card">
+      <button class="src-del" onclick="deleteSourceDoc('${d.id}','${d.filename.replace(/'/g,"\'")}')" title="Xóa">🗑</button>
+      <div class="src-name" title="${d.filename}">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
+      <div class="src-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
+      ${d.used_in_templates?.length ? `<div class="src-meta" style="margin-top:2px">Dùng cho: ${d.used_in_templates.join(', ')}</div>` : ''}
+    </div>`).join('');
+}
+
+async function deleteSourceDoc(id, name) {
+  if (!confirm(`Xóa tài liệu "${name}"?`)) return;
+  try {
+    const r = await fetch(`${API}/sources/${id}`, { method:'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    toast('Đã xóa tài liệu', 'success');
+    await loadSourceDocs();
+  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
+}
+
+async function showUploadSource() {
+  // Upload trực tiếp vào DB nguồn (không attach vào run)
+  const input = document.createElement('input');
+  input.type = 'file'; input.multiple = true; input.accept = '.pdf,.docx,.doc,.txt';
+  input.onchange = async () => {
+    if (!input.files.length) return;
+    const form = new FormData();
+    [...input.files].forEach(f => form.append('files', f));
+    try {
+      const r = await fetch(`${API}/sources/upload`, { method:'POST', body:form });
+      if (!r.ok) throw new Error(await r.text());
+      const docs = await r.json();
+      toast(`✅ Đã upload ${docs.length} tài liệu`, 'success');
+      await loadSourceDocs();
+    } catch(e) { toast('Upload lỗi: '+e.message, 'error'); }
+  };
+  input.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 2: Load checkbox list từ DB, nhóm theo template
+// ═══════════════════════════════════════════════════════════
+async function loadSrcDbList() {
+  const el = document.getElementById('srcDbList');
+  try {
+    const r = await fetch(`${API}/sources`);
+    if (!r.ok) { el.innerHTML = '<div style="color:var(--text3);font-size:11px">Không tải được danh sách.</div>'; return; }
+    const docs = await r.json();
+    allSourceDocs = docs;
+
+    if (!docs.length) {
+      el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">DB chưa có tài liệu. Upload mới bên dưới.</div>';
+      return;
+    }
+
+    // Nhóm theo template
+    const groups = {};
+    docs.forEach(d => {
+      const grp = d.used_in_templates?.length ? d.used_in_templates[0] : '— Chưa phân nhóm —';
+      if (!groups[grp]) groups[grp] = [];
+      groups[grp].push(d);
+    });
+
+    el.innerHTML = Object.entries(groups).map(([grp, items]) => `
+      <div class="src-group-label">${grp}</div>
+      ${items.map(d => `
+        <label class="src-check-item" id="lbl-${d.id}">
+          <input type="checkbox" value="${d.id}" onchange="onSrcCheck(this,'lbl-${d.id}')">
+          <div>
+            <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
+            <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
+          </div>
+        </label>`).join('')}
+    `).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--text3);font-size:11px">Lỗi: ${e.message}</div>`;
+  }
+}
+
+function onSrcCheck(cb, lblId) {
+  document.getElementById(lblId)?.classList.toggle('selected', cb.checked);
+}
+
+function getCheckedSrcIds() {
+  return [...document.querySelectorAll('#srcDbList input[type=checkbox]:checked')].map(cb => cb.value);
+}
+
+function toggleUploadNew() {
+  const panel = document.getElementById('uploadNewPanel');
+  const btn   = document.getElementById('btnToggleNew');
+  const show  = panel.style.display === 'none';
+  panel.style.display = show ? 'block' : 'none';
+  btn.textContent = show ? '− Ẩn upload' : '+ Upload mới';
+}
+
+async function init() {
+  await checkHealth();
+  await loadTemplates();
+  await loadRuns();
+  await loadSourceDocs();
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    document.getElementById('serverDot').style.background = r.ok ? 'var(--green)' : 'var(--red)';
+  } catch { document.getElementById('serverDot').style.background = 'var(--red)'; }
+}
+
+async function loadTemplates() {
+  try {
+    const r = await fetch(`${API}/templates`);
+    templates = await r.json();
+    renderTmplList();
+  } catch(e) { toast('Không thể tải templates: ' + e.message, 'error'); }
+}
+
+async function loadRuns() {
+  try {
+    const r = await fetch(`${API}/pipeline`);
+    const runs = await r.json();
+    renderRunList(runs);
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════════════════════
+function renderTmplList() {
+  const el = document.getElementById('tmplList');
+  if (!templates.length) {
+    el.innerHTML = `<div style="color:var(--text3);font-size:11px;padding:8px">
+      Chưa có template. Upload template .docx đầu tiên.
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center"
+      onclick="showUploadTemplate()">+ Upload Template</button>`;
+    return;
+  }
+  el.innerHTML = templates.map((t,i) => `
+    <div class="tmpl-card ${selTmplId===t.id?'active':''}" onclick="selectTemplate('${t.id}')">
+      <button class="tmpl-del" onclick="event.stopPropagation();deleteTemplate('${t.id}','${t.name}')" title="Xóa template">🗑</button>
+      <div class="tn">DOC ${i+1}</div>
+      <div class="tm">${t.name}</div>
+      <div class="td">${t.description||''}</div>
+      <div class="tf">🟡 ${t.fields.length} trường</div>
+    </div>`).join('')
+    + `<button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;font-size:11px"
+        onclick="showUploadTemplate()">+ Upload Template</button>`;
+}
+
+function renderRunList(runs) {
+  const el = document.getElementById('runList');
+  if (!runs.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">Chưa có run nào</div>';
+    return;
+  }
+  el.innerHTML = runs.slice(0,8).map(r => {
+    const cls = r.status==='done'?'rs-done':r.status==='reviewing'?'rs-reviewing':r.status==='error'?'rs-error':'rs-other';
+    return `<div class="run-item" style="position:relative" onclick="loadRun('${r.id}')">
+      <div style="flex:1">
+        <div class="run-id">${r.id.substring(0,8)}…</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${r.updated_at.substring(0,16)}</div>
+      </div>
+      <span class="run-status ${cls}">${r.status}</span>
+      <button onclick="event.stopPropagation();deleteRun('${r.id}')"
+        style="margin-left:6px;background:none;border:none;color:var(--text3);cursor:pointer;
+        font-size:11px;padding:2px 5px;border-radius:3px;opacity:0.5;transition:all .15s"
+        onmouseover="this.style.opacity='1';this.style.color='var(--red)'"
+        onmouseout="this.style.opacity='0.5';this.style.color='var(--text3)'">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SELECT TEMPLATE → show pipeline UI
+// ═══════════════════════════════════════════════════════════
+function selectTemplate(id) {
+  selTmplId = id;
+  currentRun = null;
+  uploadedSrcIds = [];
+  pendingFiles = [];
+  clearPoll();
+  renderTmplList();
+  renderPipelineUI();
+}
+
+function renderPipelineUI() {
+  const t = templates.find(x => x.id === selTmplId);
+  // Load danh sách tài liệu DB cho step 2
+  setTimeout(loadSrcDbList, 100);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pipeline">
+
+      <!-- Step 1: Analyze -->
+      <div class="step done" id="s1">
+        <div class="step-hdr">
+          <div class="step-num">1</div>
+          <div class="step-info">
+            <div class="step-name">🔍 Template đã phân tích</div>
+            <div class="step-desc">${t.name} · ${t.fields.length} trường tô vàng</div>
+          </div>
+          <span class="sbadge sb-done">✓ Done</span>
+        </div>
+        <div class="step-body">
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            ${t.fields.slice(0,8).map((f,i)=>`<span style="background:var(--bg);border:1px solid var(--border2);
+              border-radius:4px;padding:2px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3)">
+              #${i+1}: ${f.placeholder.substring(0,35)}${f.placeholder.length>35?'…':''}</span>`).join('')}
+            ${t.fields.length>8?`<span style="color:var(--text3);font-size:10px">+${t.fields.length-8} nữa</span>`:''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Upload sources -->
+      <div class="step active" id="s2">
+        <div class="step-hdr">
+          <div class="step-num">2</div>
+          <div class="step-info">
+            <div class="step-name">📂 Upload Tài liệu Nguồn</div>
+            <div class="step-desc">Upload báo cáo cũ, file số liệu (Word/PDF) làm dữ liệu đầu vào</div>
+          </div>
+          <span class="sbadge sb-run" id="b2">Chờ upload</span>
+        </div>
+        <div class="step-body">
+
+          <!-- Phase A: Chọn tài liệu từ DB hoặc upload mới -->
+          <div id="phaseUpload">
+            <!-- A1: Chọn từ DB -->
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;
+              display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="background:var(--accent);color:#fff;width:18px;height:18px;border-radius:50%;
+                  display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">A</span>
+                Chọn tài liệu nguồn
+              </div>
+              <button onclick="toggleUploadNew()" id="btnToggleNew"
+                style="font-size:10px;background:none;border:1px solid var(--border2);
+                color:var(--text3);border-radius:4px;padding:3px 8px;cursor:pointer">
+                + Upload mới
+              </button>
+            </div>
+
+            <!-- Danh sách từ DB (checkbox, nhóm theo template) -->
+            <div id="srcDbList" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
+              <div style="color:var(--text3);font-size:11px">Đang tải tài liệu...</div>
+            </div>
+
+            <!-- A2: Upload file mới (ẩn mặc định) -->
+            <div id="uploadNewPanel" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2)">
+              <div class="upload-zone" id="uploadZone"
+                   onclick="document.getElementById('srcInput').click()"
+                   ondragover="event.preventDefault();this.classList.add('drag')"
+                   ondrop="onDrop(event)" ondragleave="this.classList.remove('drag')">
+                <input type="file" id="srcInput" multiple accept=".pdf,.docx,.doc,.txt" onchange="onFilePick(event)">
+                <div style="font-size:22px;margin-bottom:4px">📁</div>
+                <div style="font-size:11px;font-weight:600;color:var(--text2)">Kéo thả hoặc click để upload</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:1px">PDF · DOCX · DOC · TXT</div>
+              </div>
+              <div class="file-chips" id="fileChips"></div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="doUploadFiles()" id="btnUpload">
+                ▶ Tiếp tục
+              </button>
+              <button class="btn btn-ghost" onclick="skipSources()" style="font-size:11px">
+                Bỏ qua (AI tự generate)
+              </button>
+            </div>
+            <div id="uploadLog" style="margin-top:8px"></div>
+          </div>
+
+          <!-- Phase B: Xác nhận trích xuất (hiện sau khi upload xong VÀ graph đang chờ) -->
+          <div id="phaseExtract" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2)">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;
+              display:flex;align-items:center;gap:6px">
+              <span style="background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;
+                display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">B</span>
+              Trích xuất nội dung văn bản
+            </div>
+            <div id="uploadedFileList" style="margin-bottom:10px"></div>
+            <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);
+              padding:10px 14px;font-size:11px;color:var(--text3);margin-bottom:10px">
+              ⏸ Pipeline đang chờ xác nhận — nhấn nút bên dưới để bắt đầu trích xuất văn bản từ các file đã upload.
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-ai" onclick="confirmExtract()" id="btnExtract">
+                ✨ Xác nhận Trích xuất
+              </button>
+            </div>
+            <div id="srcLog" style="margin-top:8px"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Step 3: Write -->
+      <div class="step" id="s3">
+        <div class="step-hdr">
+          <div class="step-num">3</div>
+          <div class="step-info">
+            <div class="step-name">✍️ AI Viết nội dung</div>
+            <div class="step-desc">LangGraph pipeline: Claude đọc nguồn → điền từng trường → đánh giá confidence</div>
+          </div>
+          <span class="sbadge sb-idle" id="b3">Chờ</span>
+        </div>
+        <div class="step-body">
+          <button class="btn btn-ai" onclick="startPipeline()" id="btnStart">
+            🚀 Chạy Pipeline
+          </button>
+          <div id="s3Progress" style="display:none">
+            <div class="pbar"><div class="pbar-fill" id="s3Pbar" style="width:0%"></div></div>
+            <div class="log" id="s3Log"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Review -->
+      <div class="step" id="s4">
+        <div class="step-hdr">
+          <div class="step-num">4</div>
+          <div class="step-info">
+            <div class="step-name">👁️ Review & Phê duyệt</div>
+            <div class="step-desc">🟢 AI tự tin cao · 🔴 Cần kiểm tra · Chỉnh sửa rồi approve</div>
+          </div>
+          <span class="sbadge sb-idle" id="b4">Chờ</span>
+        </div>
+        <div class="step-body" id="s4Body">
+          <div style="color:var(--text3);font-size:12px">Chờ bước 3 hoàn thành.</div>
+        </div>
+      </div>
+
+      <!-- Step 5: Export -->
+      <div class="step" id="s5">
+        <div class="step-hdr">
+          <div class="step-num">5</div>
+          <div class="step-info">
+            <div class="step-name">📥 Xuất File DOCX</div>
+            <div class="step-desc">Tải xuống file đã điền hoàn chỉnh từ server</div>
+          </div>
+          <span class="sbadge sb-idle" id="b5">Chờ</span>
+        </div>
+        <div class="step-body" id="s5Body">
+          <div style="color:var(--text3);font-size:12px">Chờ review xong.</div>
+        </div>
+      </div>
+
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 2: file handling
+// ═══════════════════════════════════════════════════════════
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  addFiles([...e.dataTransfer.files]);
+}
+function onFilePick(e) { addFiles([...e.target.files]); e.target.value=''; }
+function addFiles(files) {
+  files.forEach(f => { if (!pendingFiles.find(p=>p.name===f.name)) pendingFiles.push(f); });
+  document.getElementById('fileChips').innerHTML = pendingFiles.map(f =>
+    `<div class="chip">${f.name.endsWith('.pdf')?'📄':'📝'} ${f.name}
+     <span class="rm" onclick="rmFile('${f.name}')">×</span></div>`).join('');
+  document.getElementById('btnUpload').disabled = pendingFiles.length === 0;
+}
+function rmFile(name) { pendingFiles = pendingFiles.filter(f=>f.name!==name); addFiles([]); }
+
+// Phase A: start pipeline → upload/chọn file → confirm_upload
+async function doUploadFiles() {
+  const btn = document.getElementById('btnUpload');
+  btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang khởi động...';
+  setStep(2,'active','Đang khởi động pipeline...');
+
+  try {
+    // 1. Start pipeline để có run_id
+    if (!currentRun) {
+      const rs = await fetch(`${API}/pipeline/start`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ template_id: selTmplId, source_doc_ids: [] })
+      });
+      if (!rs.ok) throw new Error(await rs.text());
+      currentRun = (await rs.json()).run_id;
+      showMonitor(currentRun);
+    }
+
+    // 2. Upload file mới (nếu có)
+    btn.innerHTML = '<div class="spin"></div> Đang upload...';
+    const checkedIds = getCheckedSrcIds();
+    let newDocs = [];
+    if (pendingFiles.length > 0) {
+      const form = new FormData();
+      pendingFiles.forEach(f => form.append('files', f));
+      const r = await fetch(`${API}/sources/upload`, { method:'POST', body:form });
+      if (!r.ok) throw new Error(await r.text());
+      newDocs = await r.json();
+    }
+
+    // 3. Tổng hợp IDs
+    uploadedSrcIds = [...checkedIds, ...newDocs.map(d => d.id)];
+    uploadedDocs   = [...allSourceDocs.filter(d => checkedIds.includes(d.id)), ...newDocs];
+
+    if (!uploadedSrcIds.length) {
+      skipSources(); btn.disabled=false; btn.innerHTML='▶ Tiếp tục'; return;
+    }
+
+    // 4. Gắn docs vào run (1 lần duy nhất)
+    btn.innerHTML = '<div class="spin"></div> Đang xử lý...';
+    await fetch(`${API}/pipeline/${currentRun}/attach_sources`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ source_doc_ids: uploadedSrcIds })
+    });
+
+    // 5. Hiển thị danh sách đã chọn
+    document.getElementById('uploadLog').innerHTML =
+      `<div style="color:var(--green);font-size:11px">\u2705 Đã chọn ${uploadedDocs.length} tài liệu</div>`;
+    document.getElementById('uploadedFileList').innerHTML =
+      uploadedDocs.map(d => `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;
+        background:var(--bg2);border-radius:5px;margin-bottom:4px;font-size:11px">
+        <span>${(d.filename||'').endsWith('.pdf')?'📄':'📝'}</span>
+        <span style="flex:1;color:var(--text2)">${d.filename}</span>
+        <span style="color:var(--text3);font-family:monospace">${((d.file_size||0)/1024).toFixed(1)} KB</span>
+      </div>`).join('');
+
+    // 6. Poll đến khi graph dừng tại interrupt extract_sources
+    setStep(2,'active','Đang phân tích...');
+    await pollUntilStatus(['awaiting_extract', 'reviewing', 'error'], () => {
+      document.getElementById('phaseExtract').style.display = 'block';
+      setStep(2,'active','\u23f8 Chờ xác nhận trích xuất');
+    });
+
+  } catch(e) {
+    setStep(2,'err','Lỗi');
+    document.getElementById('uploadLog').innerHTML =
+      `<div style="color:var(--red);font-size:11px">✗ ${e.message}</div>`;
+    toast('Upload lỗi: '+e.message,'error');
+  }
+  btn.disabled=false; btn.innerHTML='▶ Tiếp tục';
+}
+
+// Phase B: resume graph qua interrupt extract_sources → chạy write_fields
+async function confirmExtract() {
+  const btn = document.getElementById('btnExtract');
+  btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang trích xuất...';
+  setStep(2,'active','Đang trích xuất...');
+
+  try {
+    const r = await fetch(`${API}/pipeline/${currentRun}/confirm_extract`, { method:'POST' });
+    if (!r.ok) throw new Error(await r.text());
+
+    // Poll đến khi status = reviewing (write_fields xong)
+    const log = document.getElementById('srcLog');
+    log.innerHTML = '<div class="log"><div class="info">⏳ AI đang đọc tài liệu và điền nội dung...</div></div>';
+
+    await pollUntilStatus(['reviewing', 'error'], async () => {
+      // Lấy preview kết quả extract
+      log.innerHTML = '<div class="log">' +
+        uploadedDocs.map(d=>`<div class="ok">✓ ${d.filename} — ${(d.text_len||0).toLocaleString()} ký tự</div>
+          ${d.preview?`<div class="src-preview">${d.preview}</div>`:''}`).join('') + '</div>';
+
+      setStep(2,'done','✓ Xong');
+      setStep(3,'done','✓ AI xong');
+      await loadReview();
+    });
+
+  } catch(e) {
+    setStep(2,'err','Lỗi');
+    toast('Trích xuất lỗi: '+e.message,'error');
+  }
+  btn.disabled=false; btn.innerHTML='✨ Xác nhận Trích xuất';
+}
+
+// Helper: poll cho đến khi run đạt status mong muốn
+async function pollUntilStatus(targetStatuses, onDone) {
+  return new Promise((resolve) => {
+    const timer = setInterval(async () => {
+      try {
+        const r   = await fetch(`${API}/pipeline/${currentRun}`);
+        const run = await r.json();
+        if (targetStatuses.includes(run.status)) {
+          clearInterval(timer);
+          if (run.status === 'error') {
+            toast('Pipeline lỗi: '+(run.error_message||'Unknown'), 'error');
+          } else {
+            await onDone(run);
+          }
+          resolve();
+        }
+      } catch {}
+    }, 2000);
+  });
+}
+
+function skipSources() {
+  uploadedSrcIds = [];
+  setStep(2,'done','Bỏ qua');
+  enableStep3();
+}
+
+function enableStep3() {
+  const s3 = document.getElementById('s3');
+  s3.classList.add('active');
+  document.getElementById('b3').className = 'sbadge sb-run';
+  document.getElementById('b3').textContent = 'Sẵn sàng';
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 3: start pipeline
+// ═══════════════════════════════════════════════════════════
+async function startPipeline() {
+  document.getElementById('btnStart').style.display = 'none';
+  document.getElementById('s3Progress').style.display = 'block';
+  setStep(3,'active','Đang chạy...');
+
+  const log = document.getElementById('s3Log');
+  addLog(log, '🚀 Gửi yêu cầu đến LangGraph pipeline...', 'info');
+
+  try {
+    const r   = await fetch(`${API}/pipeline/start`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ template_id: selTmplId, source_doc_ids: uploadedSrcIds })
+    });
+    const d = await r.json();
+    currentRun = d.run_id;
+    addLog(log, `✓ Run ID: ${currentRun.substring(0,8)}…`, 'ok');
+    addLog(log, '⏳ Pipeline đang chạy (steps 1→3)...', 'info');
+
+    // Poll for status
+    pollRunStatus(log);
+  } catch(e) {
+    setStep(3,'err','Lỗi');
+    addLog(log, '✗ Lỗi: '+e.message, 'err');
+  }
+}
+
+function pollRunStatus(log) {
+  let dots = 0;
+  pollTimer = setInterval(async () => {
+    if (!currentRun) return;
+    try {
+      const r = await fetch(`${API}/pipeline/${currentRun}`);
+      const run = await r.json();
+
+      if (run.status === 'reviewing') {
+        clearPoll();
+        setStep(3,'done','✓ Hoàn thành');
+        addLog(log, '✅ AI đã điền xong tất cả các trường!', 'ok');
+        document.getElementById('s3Pbar').style.width = '100%';
+        await loadReview();
+      } else if (run.status === 'error') {
+        clearPoll();
+        setStep(3,'err','Lỗi');
+        addLog(log, '✗ Pipeline lỗi: '+(run.error_message||'Unknown'), 'err');
+      } else {
+        dots = (dots+1)%4;
+        const stepMap = {
+          analyzing:'Step 1: Phân tích template…',
+          awaiting_upload:'⏸ Chờ upload tài liệu…',
+          uploading:'Step 2a: Đang upload…',
+          awaiting_extract:'⏸ Chờ xác nhận trích xuất…',
+          extracting:'Step 2b: Đang trích xuất…',
+          writing:'Step 3: AI đang viết…'
+        };
+        const msg = stepMap[run.status] || run.status;
+        document.getElementById('b3').textContent = msg;
+        const pct = {analyzing:10, awaiting_upload:20, uploading:30, awaiting_extract:40, extracting:55, writing:75}[run.status] || 50;
+        document.getElementById('s3Pbar').style.width = pct+'%';
+      }
+    } catch {}
+  }, 2000);
+}
+
+function clearPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer=null; } }
+
+// ═══════════════════════════════════════════════════════════
+// STEP 4: review
+// ═══════════════════════════════════════════════════════════
+async function loadReview() {
+  setStep(4,'waiting','Chờ duyệt');
+  const r       = await fetch(`${API}/pipeline/${currentRun}/results`);
+  const results = await r.json();
+
+  const high = results.filter(x=>x.confidence==='high').length;
+  const mid  = results.filter(x=>x.confidence==='mid').length;
+  const low  = results.filter(x=>x.confidence==='low').length;
+
+  document.getElementById('s4Body').innerHTML = `
+    <div class="sum-bar">
+      <div class="sum-stat"><div class="dot" style="background:var(--green)"></div>${high} tự tin cao</div>
+      <div class="sum-stat"><div class="dot" style="background:var(--gold)"></div>${mid} trung bình</div>
+      <div class="sum-stat"><div class="dot" style="background:var(--red)"></div>${low} cần kiểm tra</div>
+    </div>
+    <div class="rev-list">
+      ${results.map((r,i) => {
+        const cls = r.confidence==='high'?'h':r.confidence==='low'?'l':'m';
+        const lbl = r.confidence==='high'?'🟢 Cao':r.confidence==='low'?'🔴 Thấp':'🟡 Trung bình';
+        return `<div class="rev-item ${cls}">
+          <div class="rev-top">
+            <span class="rev-idx">#${(i+1).toString().padStart(2,'0')}</span>
+            <div class="rev-ctx">${r.context.substring(0,100)}${r.context.length>100?'…':''}</div>
+            <span class="rev-conf">${lbl}</span>
+          </div>
+          <textarea class="rev-ta" id="rv-${r.field_key}">${r.final_value||r.ai_value||''}</textarea>
+          ${r.reason?`<div class="rev-reason">💬 ${r.reason}</div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <select id="exportMode" style="background:var(--bg);border:1px solid var(--border2);color:var(--text);
+        border-radius:var(--rs);padding:7px 10px;font-size:12px;outline:none">
+        <option value="clean">Clean (bỏ highlight)</option>
+        <option value="tracked">Tracked (giữ màu review)</option>
+      </select>
+      <button class="btn btn-green" onclick="submitReview()">✅ Phê duyệt & Tiếp tục</button>
+    </div>`;
+}
+
+async function submitReview() {
+  const results = await (await fetch(`${API}/pipeline/${currentRun}/results`)).json();
+  const edits   = {};
+  results.forEach(r => {
+    const ta = document.getElementById(`rv-${r.field_key}`);
+    if (ta) edits[r.field_key] = ta.value;
+  });
+  const mode = document.getElementById('exportMode').value;
+
+  setStep(4,'done','✓ Đã duyệt');
+
+  const r = await fetch(`${API}/pipeline/${currentRun}/approve`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ edits, export_mode: mode })
+  });
+  if (!r.ok) { toast('Approve lỗi','error'); return; }
+
+  renderExport(mode);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 5: export
+// ═══════════════════════════════════════════════════════════
+function renderExport(mode) {
+  setStep(5,'active','Sẵn sàng');
+  document.getElementById('s5Body').innerHTML = `
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">
+      Nhấn nút bên dưới để tải xuống file .docx đã điền hoàn chỉnh từ server.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="downloadExport('${mode}')" id="btnDl">
+        📥 Tải xuống (${mode === 'clean' ? 'Clean' : 'Tracked'})
+      </button>
+      <button class="btn btn-ghost" onclick="openPreview()" style="font-size:11px">
+        👁️ Xem trước báo cáo
+      </button>
+      <button class="btn btn-ghost" onclick="downloadExport('${mode==='clean'?'tracked':'clean'}')" style="font-size:11px">
+        🎨 ${mode === 'clean' ? 'Tracked version' : 'Clean version'}
+      </button>
+    </div>
+    <div id="dlResult" style="margin-top:8px"></div>`;
+}
+
+async function downloadExport(mode) {
+  const btn = document.getElementById('btnDl');
+  btn.disabled=true; btn.innerHTML='<div class="spin"></div> Đang tạo file...';
+
+  try {
+    const r = await fetch(`${API}/pipeline/${currentRun}/export?export_mode=${mode}`, { method:'POST' });
+    if (!r.ok) throw new Error(await r.text());
+
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const cd   = r.headers.get('Content-Disposition')||'';
+    const name = cd.match(/filename="(.+)"/)?.[1] || 'report.docx';
+    a.href=url; a.download=name; a.click();
+    URL.revokeObjectURL(url);
+
+    setStep(5,'done','✓ Done');
+    document.getElementById('dlResult').innerHTML =
+      `<div style="color:var(--green);font-size:12px">✅ Đã tải: <strong>${name}</strong></div>`;
+    toast('✅ File đã tải xuống thành công!','success');
+    await loadRuns();
+  } catch(e) {
+    document.getElementById('dlResult').innerHTML =
+      `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
+    toast('Lỗi tải file: '+e.message,'error');
+  }
+  btn.disabled=false; btn.innerHTML='📥 Tải xuống';
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOAD EXISTING RUN
+// ═══════════════════════════════════════════════════════════
+async function loadRun(runId) {
+  currentRun = runId;
+  const r   = await fetch(`${API}/pipeline/${runId}`);
+  const run = await r.json();
+
+  // Find template
+  const t = templates.find(x => x.id === run.template_id);
+  if (t) { selTmplId = t.id; renderTmplList(); renderPipelineUI(); }
+
+  // Restore UI to correct step
+  if (['reviewing','approved','exporting'].includes(run.status)) {
+    setStep(1,'done','✓');setStep(2,'done','✓');setStep(3,'done','✓');
+    await loadReview();
+  } else if (run.status === 'done') {
+    setStep(1,'done','✓');setStep(2,'done','✓');setStep(3,'done','✓');setStep(4,'done','✓');
+    renderExport('clean');
+    setStep(5,'done','✓');
+  }
+  toast(`Run ${runId.substring(0,8)}… đã tải`, 'info');
+}
+
+// ═══════════════════════════════════════════════════════════
+// UPLOAD TEMPLATE
+// ═══════════════════════════════════════════════════════════
+async function deleteRun(id) {
+  try {
+    const res = await fetch(`/api/pipeline/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(await res.text());
+    toast('Đã xóa run', 'success');
+    await loadRuns();
+  } catch(e) {
+    toast('Xóa thất bại: ' + e.message, 'error');
+  }
+}
+
+async function clearAllRuns() {
+  if (!confirm('Xóa toàn bộ lịch sử runs?\n\nThao tác này không thể hoàn tác.')) return;
+  try {
+    const res = await fetch('/api/pipeline', { method: 'DELETE' });
+    if (!res.ok) throw new Error(await res.text());
+    toast('Đã xóa toàn bộ lịch sử', 'success');
+    await loadRuns();
+  } catch(e) {
+    toast('Xóa thất bại: ' + e.message, 'error');
+  }
+}
+
+async function deleteTemplate(id, name) {
+  if (!confirm(`Xóa template "${name}"?\n\nThao tác này xóa luôn trong DB và không thể hoàn tác.`)) return;
+  try {
+    const res = await fetch(`/api/templates/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(await res.text());
+    if (selTmplId === id) { selTmplId = null; showEmpty(); }
+    toast('Đã xóa template', 'success');
+    await loadTemplates();
+  } catch(e) {
+    toast('Xóa thất bại: ' + e.message, 'error');
+  }
+}
+
+function showUploadTemplate() {
+  document.getElementById('mainContent').innerHTML = `
+    <div style="max-width:480px">
+      <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">📤 Upload Template .docx</h2>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Tên template *</div>
+          <input id="tmplName" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);
+            border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none"
+            placeholder="VD: Mẫu BC gửi CQUBKTĐU (NQ57)">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Mô tả</div>
+          <input id="tmplDesc" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);
+            border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none"
+            placeholder="VD: Báo cáo kết quả giám sát...">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">File .docx *</div>
+          <input type="file" id="tmplFile" accept=".docx"
+            style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);
+            color:var(--text);font-size:12px;padding:8px;width:100%">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-primary" onclick="doUploadTemplate()">📤 Upload</button>
+          <button class="btn btn-ghost" onclick="renderTmplList();document.getElementById('mainContent').innerHTML=''">Hủy</button>
+        </div>
+        <div id="uploadTmplResult"></div>
+      </div>
+    </div>`;
+}
+
+async function doUploadTemplate() {
+  const name = document.getElementById('tmplName').value.trim();
+  const desc = document.getElementById('tmplDesc').value.trim();
+  const file = document.getElementById('tmplFile').files[0];
+  if (!name || !file) { toast('Nhập tên và chọn file','error'); return; }
+
+  const form = new FormData();
+  form.append('file', file); form.append('name', name); form.append('description', desc);
+
+  document.getElementById('uploadTmplResult').innerHTML = '<div style="color:var(--text3);font-size:12px"><div class="spin"></div> Đang upload và phân tích...</div>';
+
+  try {
+    const r = await fetch(`${API}/templates/upload`, { method:'POST', body:form });
+    if (!r.ok) {
+      const e = await r.json();
+      const msg = e.detail || 'Upload failed';
+      if (r.status === 409) {
+        document.getElementById('uploadTmplResult').innerHTML =
+          `<div style="color:var(--gold);font-size:12px;line-height:1.6">
+            ⚠️ ${msg}
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <button class="btn btn-ghost" style="font-size:10px"
+                onclick="document.getElementById('tmplName').value='';document.getElementById('tmplName').focus()">
+                ✏️ Đổi tên
+              </button>
+              <button class="btn btn-ghost" style="font-size:10px"
+                onclick="switchSidebarTab('tmpl')">
+                📋 Xem template cũ
+              </button>
+            </div>
+          </div>`;
+      } else {
+        throw new Error(msg);
+      }
+      return;
+    }
+    const tmpl = await r.json();
+    document.getElementById('uploadTmplResult').innerHTML =
+      `<div style="color:var(--green);font-size:12px">✅ Upload thành công! ${tmpl.fields.length} trường được phát hiện.</div>`;
+    await loadTemplates();
+    setTimeout(() => selectTemplate(tmpl.id), 800);
+  } catch(e) {
+    document.getElementById('uploadTmplResult').innerHTML =
+      `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function setStep(n, state, label) {
+  const el = document.getElementById(`s${n}`);
+  const b  = document.getElementById(`b${n}`);
+  if (!el) return;
+  el.className = 'step ' + (state==='idle'?'':state==='active'?'active':state==='done'?'done':state==='err'?'err':'waiting');
+  if (b && label) {
+    const cls = {idle:'sb-idle',active:'sb-run',done:'sb-done',err:'sb-err',waiting:'sb-wait'}[state]||'sb-idle';
+    b.className = 'sbadge '+cls;
+    b.textContent = label;
+  }
+}
+
+function addLog(el, msg, cls='') {
+  if (!el) return;
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = msg;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PREVIEW MODAL
+// ═══════════════════════════════════════════════════════════
+async function openPreview() {
+  const modal = document.getElementById('previewModal');
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  const content = document.getElementById('previewContent');
+  content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div class="spin"></div><div style="margin-top:10px;font-size:12px">Đang tải dữ liệu...</div></div>';
+
+  try {
+    const r = await fetch(`${API}/pipeline/${currentRun}/results`);
+    const results = await r.json();
+
+    // Stats
+    const high = results.filter(x=>x.confidence==='high').length;
+    const mid  = results.filter(x=>x.confidence==='mid').length;
+    const low  = results.filter(x=>x.confidence==='low').length;
+    document.getElementById('previewStats').innerHTML = `
+      <span style="font-size:11px;color:var(--green)">🟢 ${high} tự tin cao</span>
+      <span style="font-size:11px;color:var(--gold)">🟡 ${mid} trung bình</span>
+      <span style="font-size:11px;color:var(--red)">🔴 ${low} cần kiểm tra</span>
+      <span style="font-size:11px;color:var(--text3)">Tổng: ${results.length} trường</span>`;
+
+    // Template name
+    document.getElementById('previewTemplateName').innerHTML =
+      `📋 Template: <strong style="color:var(--text2)">${(templates.find(t=>t.id===selTmplId)||{}).name || ''}</strong> &nbsp;·&nbsp; Run: <code>${currentRun?.substring(0,8)}…</code>`;
+
+    // Render report-like preview
+    content.innerHTML = `
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:32px 36px;
+        font-family:'Times New Roman',serif;font-size:13px;line-height:1.9;color:#1a1a1a;
+        box-shadow:0 2px 8px rgba(0,0,0,.08)">
+
+        <div style="text-align:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #1a1a1a">
+          <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">
+            NGÂN HÀNG TMCP ĐẦU TƯ VÀ PHÁT TRIỂN VIỆT NAM
+          </div>
+          <div style="font-size:11px;color:#555;margin-bottom:16px">BIDV</div>
+          <div style="font-size:15px;font-weight:700;text-transform:uppercase">
+            ${(templates.find(t=>t.id===selTmplId)||{}).name || 'BÁO CÁO'}
+          </div>
+        </div>
+
+        ${results.map((r, i) => {
+          const conf = r.confidence;
+          const val  = r.final_value || r.ai_value || '';
+          const confColor = conf==='high'?'#059669':conf==='low'?'#dc2626':'#d97706';
+          const confLabel = conf==='high'?'Cao':conf==='low'?'Thấp':'TB';
+          const bgColor   = conf==='high'?'rgba(5,150,105,.06)':conf==='low'?'rgba(220,38,38,.06)':'rgba(217,119,6,.06)';
+          return `
+          <div style="margin-bottom:18px;padding:12px 16px;border-radius:6px;
+            border-left:3px solid ${confColor};background:${bgColor}">
+            <div style="font-size:9px;font-weight:700;color:${confColor};letter-spacing:1px;
+              text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+              <span>TRƯỜNG #${(i+1).toString().padStart(2,'0')}</span>
+              <span style="background:${confColor};color:#fff;padding:1px 6px;border-radius:10px;font-size:8px">
+                ${confLabel}
+              </span>
+              <span style="color:#94a3b8;font-weight:400;font-size:9px">${r.context?.substring(0,60)}…</span>
+            </div>
+            <div style="font-size:13px;color:#1a1a1a;line-height:1.7">${val || '<em style="color:#94a3b8">— Chưa có nội dung —</em>'}</div>
+            ${r.reason ? `<div style="font-size:10px;color:#94a3b8;margin-top:6px;font-style:italic">💬 ${r.reason}</div>` : ''}
+          </div>`;
+        }).join('')}
+
+        <div style="margin-top:32px;padding-top:20px;border-top:1px solid #e2e8f0;
+          font-size:10px;color:#94a3b8;text-align:center">
+          Được tạo tự động bởi BIDV AI Agent &nbsp;·&nbsp; Nhóm NCCN - Ban Công nghệ
+        </div>
+      </div>`;
+
+  } catch(e) {
+    content.innerHTML = `<div style="color:var(--red);padding:20px;font-size:12px">✗ Lỗi tải dữ liệu: ${e.message}</div>`;
+  }
+}
+
+function closePreview() {
+  document.getElementById('previewModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function downloadFromPreview() {
+  const mode = document.getElementById('previewExportMode').value;
+  const res  = document.getElementById('previewDlResult');
+  res.innerHTML = '<div class="spin" style="display:inline-block"></div> Đang tạo file...';
+  try {
+    const r = await fetch(`${API}/pipeline/${currentRun}/export?export_mode=${mode}`, { method:'POST' });
+    if (!r.ok) throw new Error(await r.text());
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const cd   = r.headers.get('Content-Disposition')||'';
+    const name = cd.match(/filename="(.+)"/)?.[1] || 'report.docx';
+    a.href=url; a.download=name; a.click();
+    URL.revokeObjectURL(url);
+    res.innerHTML = `<span style="color:var(--green);font-size:11px">✅ Đã tải: <strong>${name}</strong></span>`;
+    toast('✅ Tải xuống thành công!','success');
+  } catch(e) {
+    res.innerHTML = `<span style="color:var(--red);font-size:11px">✗ ${e.message}</span>`;
+  }
+}
+
+// Đóng modal khi click ngoài
+document.addEventListener('click', e => {
+  const modal = document.getElementById('previewModal');
+  if (e.target === modal) closePreview();
+});
+
+function toast(msg, type='info') {
+  document.querySelector('.toast')?.remove();
+  const t = Object.assign(document.createElement('div'), {className:`toast ${type}`,textContent:msg});
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 4000);
+}
+
+init();
+</script>
+
+<!-- Footer -->
+<footer style="margin-top:40px;padding:16px 28px;border-top:1px solid var(--border2);
+  background:var(--bg2);text-align:center;font-size:11px;color:var(--text3)">
+  © 2025 <strong style="color:var(--text2)">Nhóm NCCN</strong> — Ban Công nghệ &nbsp;|&nbsp;
+  BIDV Report AI Agent &nbsp;|&nbsp; Powered by LangGraph · OpenAI GPT-4o
+</footer>
+
+<!-- Preview Modal -->
+<div id="previewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:1000;overflow-y:auto;padding:40px 20px">
+  <div style="max-width:800px;margin:0 auto;background:var(--bg3);border-radius:var(--r);
+    border:1px solid var(--border2);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+
+    <!-- Modal header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding:16px 22px;border-bottom:1px solid var(--border2);background:var(--bg2)">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">📄 Xem trước báo cáo</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Final Report Preview</div>
+      </div>
+      <button onclick="closePreview()" style="background:none;border:none;color:var(--text3);
+        font-size:20px;cursor:pointer;padding:4px 8px;border-radius:4px"
+        onmouseover="this.style.background='var(--border2)'"
+        onmouseout="this.style.background='none'">✕</button>
+    </div>
+
+    <!-- Stats bar -->
+    <div id="previewStats" style="padding:12px 22px;border-bottom:1px solid var(--border2);
+      background:var(--bg2);display:flex;gap:16px;flex-wrap:wrap"></div>
+
+    <!-- Template name -->
+    <div id="previewTemplateName" style="padding:10px 22px;border-bottom:1px solid var(--border2);
+      font-size:11px;color:var(--text3);font-family:monospace"></div>
+
+    <!-- Content -->
+    <div id="previewContent" style="padding:22px;max-height:60vh;overflow-y:auto"></div>
+
+    <!-- Footer actions -->
+    <div style="padding:16px 22px;border-top:1px solid var(--border2);background:var(--bg2);
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <select id="previewExportMode" style="background:var(--bg);border:1px solid var(--border2);
+        color:var(--text);border-radius:var(--rs);padding:7px 10px;font-size:12px">
+        <option value="clean">Clean (bỏ highlight)</option>
+        <option value="tracked">Tracked (giữ màu review)</option>
+      </select>
+      <button class="btn btn-primary" onclick="downloadFromPreview()">📥 Tải xuống</button>
+      <button class="btn btn-ghost" onclick="closePreview()">Đóng</button>
+      <div id="previewDlResult" style="font-size:11px;margin-left:auto"></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
