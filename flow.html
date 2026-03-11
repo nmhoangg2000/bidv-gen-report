@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>BIDV AI Agent — Architecture Diagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f5f6fa;
+  min-height: 100vh;
+  padding: 40px 32px 60px;
+  color: #1e2235;
+}
+
+/* ── Description boxes ── */
+.desc-box {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #2563eb;
+  border-radius: 0 10px 10px 0;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: #374151;
+}
+.desc-box h3 {
+  font-size: 13px; font-weight: 700; color: #1e2235;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 7px;
+}
+.desc-box p { margin-bottom: 6px; }
+.desc-box p:last-child { margin-bottom: 0; }
+.desc-box ul { padding-left: 18px; }
+.desc-box li { margin-bottom: 4px; }
+.desc-box code {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px; background: #f1f5f9;
+  padding: 1px 5px; border-radius: 3px; color: #0f172a;
+}
+.desc-note {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #78350f;
+  margin-top: 10px;
+}
+.desc-note strong { color: #92400e; }
+
+/* ── Title ── */
+.page-title {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.page-title h1 {
+  font-size: 26px; font-weight: 800; color: #1e2235;
+  letter-spacing: -0.5px;
+}
+.page-title h1 span { color: #2563eb; }
+.page-title p {
+  font-size: 13px; color: #64748b; margin-top: 6px;
+  font-family: 'Fira Code', monospace;
+}
+
+/* ── Section labels ── */
+.section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: #94a3b8;
+  margin-bottom: 12px; padding-left: 2px;
+}
+
+/* ══════════════════════════════
+   SWIMLANE DIAGRAM
+══════════════════════════════ */
+.swimlane-wrap {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  margin-bottom: 28px;
+}
+
+/* Lane headers */
+.lane-headers {
+  display: grid;
+  grid-template-columns: 110px 1fr 1fr 1fr;
+  border-bottom: 2px solid #e2e8f0;
+}
+.lane-hdr {
+  padding: 14px 16px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 7px;
+  border-right: 1px solid #e2e8f0;
+}
+.lane-hdr:last-child { border-right: none; }
+.lh-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.lh-user   { background: #f8faff; color: #4f46e5; }
+.lh-agent  { background: #f0fdf4; color: #16a34a; }
+.lh-system { background: #fefce8; color: #ca8a04; }
+
+/* Lane rows */
+.lane-body {
+  display: grid;
+  grid-template-columns: 110px 1fr 1fr 1fr;
+}
+.lane-step-num {
+  background: #f8f9fc;
+  border-right: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.step-badge {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #e2e8f0; color: #64748b;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.lane-cell {
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 16px;
+  position: relative;
+  min-height: 90px;
+  display: flex; align-items: center;
+}
+.lane-cell:last-child { border-right: none; }
+.lane-body:last-child .lane-cell { border-bottom: none; }
+.lane-body:last-child .lane-step-num { border-bottom: none; }
+
+/* Activity boxes */
+.activity {
+  border-radius: 8px;
+  padding: 10px 13px;
+  width: 100%;
+  border: 1.5px solid;
+  position: relative;
+}
+.act-title {
+  font-size: 12px; font-weight: 600; margin-bottom: 3px;
+  display: flex; align-items: center; gap: 6px;
+}
+.act-desc { font-size: 10.5px; color: #64748b; line-height: 1.5; }
+.act-tag {
+  display: inline-block; margin-top: 6px;
+  font-family: 'Fira Code', monospace;
+  font-size: 9px; font-weight: 500;
+  padding: 2px 7px; border-radius: 3px;
+}
+
+/* Colors by actor */
+.act-user   { background: #f5f3ff; border-color: #c4b5fd; }
+.act-user .act-title { color: #4f46e5; }
+.act-user .act-tag { background: #ede9fe; color: #6d28d9; }
+
+.act-agent  { background: #f0fdf4; border-color: #86efac; }
+.act-agent .act-title { color: #16a34a; }
+.act-agent .act-tag { background: #dcfce7; color: #15803d; }
+
+.act-system { background: #fefce8; border-color: #fde047; }
+.act-system .act-title { color: #92400e; }
+.act-system .act-tag { background: #fef9c3; color: #92400e; }
+
+.act-ai     { background: #eff6ff; border-color: #93c5fd; }
+.act-ai .act-title { color: #1d4ed8; }
+.act-ai .act-tag { background: #dbeafe; color: #1e40af; }
+
+/* Interrupt row */
+.interrupt-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  background: #fffbeb;
+  border-top: 1px dashed #fcd34d;
+  border-bottom: 1px dashed #fcd34d;
+}
+.interrupt-num {
+  display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid #e2e8f0;
+  padding: 12px;
+}
+.interrupt-content {
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.interrupt-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: #fef3c7; border: 1.5px solid #fcd34d;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.interrupt-text h4 { font-size: 12px; font-weight: 700; color: #92400e; }
+.interrupt-text p  { font-size: 11px; color: #78350f; margin-top: 2px; font-family: 'Fira Code', monospace; }
+
+/* ══════════════════════════════
+   TECH STACK ROW
+══════════════════════════════ */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.tech-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  transition: box-shadow .2s, transform .2s;
+  cursor: default;
+}
+.tech-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.09);
+  transform: translateY(-2px);
+}
+.tc-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.tc-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.tc-name { font-size: 13px; font-weight: 700; }
+.tc-role { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+.tc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tc-tag {
+  font-family: 'Fira Code', monospace;
+  font-size: 9px; font-weight: 500;
+  padding: 2px 7px; border-radius: 3px;
+  background: #f1f5f9; color: #475569;
+}
+
+/* ══════════════════════════════
+   DATA FLOW DIAGRAM
+══════════════════════════════ */
+.dataflow {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  margin-bottom: 28px;
+}
+
+.df-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 10px;
+}
+.df-row:last-child { margin-bottom: 0; }
+
+.df-node {
+  flex: 1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  border: 1.5px solid;
+  text-align: center;
+  min-width: 0;
+}
+.df-node-name { font-size: 11px; font-weight: 600; }
+.df-node-sub  { font-size: 9px; color: #94a3b8; margin-top: 2px; font-family: 'Fira Code', monospace; }
+
+.df-arrow {
+  flex-shrink: 0;
+  width: 50px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px;
+}
+.df-arrow-line {
+  width: 100%; height: 1.5px;
+  background: linear-gradient(to right, #cbd5e1, #94a3b8);
+  position: relative;
+}
+.df-arrow-line::after {
+  content: '▶';
+  position: absolute; right: -6px; top: -5px;
+  font-size: 10px; color: #94a3b8;
+}
+.df-arrow-label {
+  font-size: 8px; color: #94a3b8;
+  font-family: 'Fira Code', monospace;
+  white-space: nowrap;
+}
+
+/* DB schema mini */
+.db-schema {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.db-table {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+.db-table-head {
+  padding: 8px 12px;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+.db-table-body { padding: 6px 12px 10px; }
+.db-col {
+  font-family: 'Fira Code', monospace;
+  font-size: 9px; color: #64748b;
+  padding: 2px 0;
+  display: flex; align-items: center; gap: 4px;
+}
+.db-col-pk { color: #f59e0b; font-weight: 700; }
+.db-col-fk { color: #6366f1; }
+
+/* Docker bar */
+.docker-bar {
+  background: #fff;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.docker-icon { font-size: 28px; }
+.docker-info h4 { font-size: 13px; font-weight: 700; color: #1e40af; }
+.docker-info p  { font-size: 11px; color: #64748b; margin-top: 2px; }
+.docker-svcs {
+  margin-left: auto;
+  display: flex; gap: 10px;
+}
+.docker-svc {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 8px 14px;
+  text-align: center;
+}
+.docker-svc-name {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px; font-weight: 600; color: #1d4ed8;
+}
+.docker-svc-port {
+  font-family: 'Fira Code', monospace;
+  font-size: 9px; color: #64748b; margin-top: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- Title -->
+<div class="page-title">
+  <h1>BIDV Report <span>AI Agent</span> — System Architecture</h1>
+  <p>LangGraph Pipeline · FastAPI · PostgreSQL · OpenAI GPT-4o · Docker</p>
+</div>
+
+<!-- ══ 1. SWIMLANE FLOW ══ -->
+<!-- ══ TỔNG QUAN ══ -->
+<div class="desc-box" style="border-left-color:#2563eb;margin-bottom:28px">
+  <h3>🏦 Tổng quan hệ thống</h3>
+  <p>
+    <strong>BIDV Report AI Agent</strong> là hệ thống tự động hóa việc soạn thảo báo cáo ngân hàng dựa trên AI.
+    Người dùng upload một file <code>.docx</code> mẫu có các ô <strong style="color:#ca8a04">tô màu vàng</strong> đánh dấu vị trí cần điền,
+    cùng với các tài liệu nguồn (báo cáo cũ, file số liệu). Hệ thống sẽ tự động phân tích, điền thông tin,
+    cho phép người dùng review và xuất file hoàn chỉnh.
+  </p>
+  <p>
+    Pipeline được xây dựng trên <strong>LangGraph</strong> với cơ chế <em>human-in-the-loop interrupt</em> — AI xử lý tự động
+    đến một điểm nhất định rồi dừng lại chờ con người phê duyệt trước khi xuất kết quả cuối cùng.
+  </p>
+</div>
+
+<div class="section-label">① Pipeline Flow — Swimlane Diagram</div>
+<div class="swimlane-wrap">
+
+  <!-- Headers -->
+  <div class="lane-headers">
+    <div class="lane-hdr" style="background:#f8f9fc;color:#64748b;font-size:10px">
+      <span>BƯỚC</span>
+    </div>
+    <div class="lane-hdr lh-user">
+      <div class="lh-dot" style="background:#4f46e5"></div>
+      Người dùng
+    </div>
+    <div class="lane-hdr lh-agent">
+      <div class="lh-dot" style="background:#16a34a"></div>
+      LangGraph Agent
+    </div>
+    <div class="lane-hdr lh-system">
+      <div class="lh-dot" style="background:#ca8a04"></div>
+      Hệ thống / DB
+    </div>
+  </div>
+
+  <!-- Step 0 -->
+  <div class="lane-body">
+    <div class="lane-step-num"><div class="step-badge" style="background:#ede9fe;color:#4f46e5">0</div></div>
+    <div class="lane-cell">
+      <div class="activity act-user">
+        <div class="act-title">📤 Upload Template</div>
+        <div class="act-desc">Upload file .docx có các ô <strong>tô màu vàng</strong> cần điền</div>
+        <span class="act-tag">POST /api/templates/upload</span>
+      </div>
+    </div>
+    <div class="lane-cell" style="background:#fafafa"></div>
+    <div class="lane-cell">
+      <div class="activity act-system">
+        <div class="act-title">💾 Lưu template + fields</div>
+        <div class="act-desc">Extract yellow highlights → INSERT vào DB</div>
+        <span class="act-tag">templates + template_fields</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="lane-body">
+    <div class="lane-step-num"><div class="step-badge" style="background:#dcfce7;color:#16a34a">1</div></div>
+    <div class="lane-cell">
+      <div class="activity act-user">
+        <div class="act-title">📂 Upload tài liệu nguồn</div>
+        <div class="act-desc">Upload báo cáo cũ, file số liệu (Word / PDF)</div>
+        <span class="act-tag">POST /api/sources/upload</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-agent">
+        <div class="act-title">🔍 analyze_template</div>
+        <div class="act-desc">Load fields từ DB, khởi tạo PipelineState</div>
+        <span class="act-tag">node_1 · LangGraph</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-system">
+        <div class="act-title">📝 Extract text</div>
+        <div class="act-desc">pandoc → Word, pdftotext → PDF</div>
+        <span class="act-tag">source_documents table</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="lane-body">
+    <div class="lane-step-num"><div class="step-badge" style="background:#dcfce7;color:#16a34a">2</div></div>
+    <div class="lane-cell">
+      <div class="activity act-user">
+        <div class="act-title">▶ Chạy Pipeline</div>
+        <div class="act-desc">Nhấn "Chạy Pipeline" để bắt đầu</div>
+        <span class="act-tag">POST /api/pipeline/start</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-agent">
+        <div class="act-title">📚 extract_sources</div>
+        <div class="act-desc">Ghép tất cả text nguồn, chuẩn bị context cho AI</div>
+        <span class="act-tag">node_2 · max 14k chars</span>
+      </div>
+    </div>
+    <div class="lane-cell" style="background:#fafafa"></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="lane-body">
+    <div class="lane-step-num"><div class="step-badge" style="background:#dbeafe;color:#1d4ed8">3</div></div>
+    <div class="lane-cell" style="background:#fafafa"></div>
+    <div class="lane-cell">
+      <div class="activity act-ai">
+        <div class="act-title">🤖 write_fields · GPT-4o</div>
+        <div class="act-desc">Gọi OpenAI mỗi field:<br>context + placeholder + tài liệu nguồn → JSON {value, confidence, reason}</div>
+        <span class="act-tag">node_3 · JSON mode</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-system">
+        <div class="act-title">💾 Lưu kết quả AI</div>
+        <div class="act-desc">🟢 high / 🟡 mid / 🔴 low confidence</div>
+        <span class="act-tag">field_results table</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERRUPT -->
+  <div class="interrupt-row">
+    <div class="interrupt-num">
+      <div class="step-badge" style="background:#fef3c7;color:#92400e">⏸</div>
+    </div>
+    <div class="interrupt-content">
+      <div class="interrupt-icon">⏸️</div>
+      <div class="interrupt-text">
+        <h4>LANGGRAPH INTERRUPT — Human-in-the-loop</h4>
+        <p>Graph dừng tại đây · Frontend polling mỗi 2s · status = "reviewing" → hiện UI review</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="lane-body">
+    <div class="lane-step-num"><div class="step-badge" style="background:#fef3c7;color:#92400e">4</div></div>
+    <div class="lane-cell">
+      <div class="activity act-user">
+        <div class="act-title">👁️ Review & Phê duyệt</div>
+        <div class="act-desc">Xem kết quả AI, chỉnh sửa nếu cần, nhấn Phê duyệt</div>
+        <span class="act-tag">POST /api/pipeline/{id}/approve</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-agent">
+        <div class="act-title">✅ human_review</div>
+        <div class="act-desc">Resume graph, inject human_edits vào state, cập nhật final_value</div>
+        <span class="act-tag">node_4 · graph.resume()</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-system">
+        <div class="act-title">💾 Cập nhật final_value</div>
+        <div class="act-desc">approved = true cho tất cả fields</div>
+        <span class="act-tag">UPDATE field_results</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="lane-body">
+    <div class="lane-step-num"><div class="step-badge" style="background:#dcfce7;color:#16a34a">5</div></div>
+    <div class="lane-cell">
+      <div class="activity act-user">
+        <div class="act-title">📥 Download DOCX</div>
+        <div class="act-desc">Chọn chế độ Clean hoặc Tracked, tải file về</div>
+        <span class="act-tag">POST /api/pipeline/{id}/export</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-agent">
+        <div class="act-title">📦 export_doc</div>
+        <div class="act-desc">Load template binary → unzip → thay XML highlights → rezip</div>
+        <span class="act-tag">node_5 · zipfile + ET</span>
+      </div>
+    </div>
+    <div class="lane-cell">
+      <div class="activity act-system">
+        <div class="act-title">✅ Pipeline done</div>
+        <div class="act-desc">status = "done" · trả file .docx cho browser</div>
+        <span class="act-tag">exported_documents</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ 2. TECH STACK ══ -->
+<div class="desc-box" style="border-left-color:#16a34a;margin-bottom:28px">
+  <h3>📋 Giải thích luồng xử lý</h3>
+  <ul>
+    <li><strong>Bước 0 — Upload Template:</strong> Người dùng upload file <code>.docx</code> mẫu. Backend giải nén ZIP, đọc <code>word/document.xml</code>, tìm tất cả các <code>run</code> có thuộc tính <code>w:highlight w:val="yellow"</code> và lưu thành danh sách fields vào database.</li>
+    <li><strong>Bước 1 — Upload tài liệu nguồn:</strong> Người dùng có thể upload nhiều file Word/PDF làm tài liệu tham khảo. Hệ thống dùng <code>pandoc</code> và <code>pdftotext</code> để trích xuất plain text.</li>
+    <li><strong>Bước 2 — Chạy Pipeline:</strong> LangGraph khởi động, phân tích template, ghép toàn bộ text nguồn thành context cho AI (tối đa 14.000 ký tự/field).</li>
+    <li><strong>Bước 3 — AI điền fields:</strong> GPT-4o được gọi lần lượt cho từng field với system prompt quy định văn phong hành chính ngân hàng. Mỗi field nhận được <code>value</code>, <code>confidence</code> (high/mid/low) và <code>reason</code>.</li>
+    <li><strong>⏸ Interrupt:</strong> LangGraph tự động dừng, frontend polling mỗi 2 giây để phát hiện trạng thái <code>"reviewing"</code> và hiển thị giao diện review.</li>
+    <li><strong>Bước 4 — Human Review:</strong> Người dùng xem kết quả AI, chỉnh sửa nếu cần, nhấn Phê duyệt. Graph resume và lưu <code>final_value</code>.</li>
+    <li><strong>Bước 5 — Export DOCX:</strong> Hệ thống load file template gốc từ DB, thay thế các ô vàng bằng giá trị đã duyệt trực tiếp trên XML, repack thành <code>.docx</code> mới và trả về browser.</li>
+  </ul>
+  <div class="desc-note">
+    <strong>⚠️ Lưu ý kỹ thuật:</strong> Việc thay thế nội dung thực hiện bằng <code>str.replace()</code> trực tiếp trên raw XML bytes thay vì dùng <code>ElementTree.write()</code> — để tránh mất namespace declarations khiến Word từ chối mở file.
+  </div>
+</div>
+
+<div class="section-label">② Tech Stack</div>
+<div class="tech-grid">
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#eff6ff">🧠</div>
+      <div>
+        <div class="tc-name">LangGraph</div>
+        <div class="tc-role">Orchestration</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">v0.2.28</span>
+      <span class="tc-tag">StateGraph</span>
+      <span class="tc-tag">MemorySaver</span>
+      <span class="tc-tag">interrupt_before</span>
+    </div>
+  </div>
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#f0fdf4">⚡</div>
+      <div>
+        <div class="tc-name">FastAPI</div>
+        <div class="tc-role">Backend API</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">v0.111</span>
+      <span class="tc-tag">async/await</span>
+      <span class="tc-tag">BackgroundTasks</span>
+      <span class="tc-tag">:8000</span>
+    </div>
+  </div>
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#fefce8">🤖</div>
+      <div>
+        <div class="tc-name">OpenAI GPT-4o</div>
+        <div class="tc-role">AI Model</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">chat.completions</span>
+      <span class="tc-tag">json_object</span>
+      <span class="tc-tag">max_tokens 800</span>
+    </div>
+  </div>
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#f0fdf4">🐘</div>
+      <div>
+        <div class="tc-name">PostgreSQL</div>
+        <div class="tc-role">Database</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">pg16</span>
+      <span class="tc-tag">pgvector</span>
+      <span class="tc-tag">asyncpg</span>
+      <span class="tc-tag">BYTEA</span>
+    </div>
+  </div>
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#faf5ff">🌐</div>
+      <div>
+        <div class="tc-name">Nginx</div>
+        <div class="tc-role">Reverse Proxy</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">alpine</span>
+      <span class="tc-tag">proxy_pass :8000</span>
+      <span class="tc-tag">:8080</span>
+    </div>
+  </div>
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#eff6ff">🐳</div>
+      <div>
+        <div class="tc-name">Docker Compose</div>
+        <div class="tc-role">Container</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">3 services</span>
+      <span class="tc-tag">pg_data volume</span>
+      <span class="tc-tag">healthcheck</span>
+    </div>
+  </div>
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#fefce8">📄</div>
+      <div>
+        <div class="tc-name">pandoc · pdftotext</div>
+        <div class="tc-role">Text Extraction</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">Word → text</span>
+      <span class="tc-tag">PDF → text</span>
+      <span class="tc-tag">poppler-utils</span>
+    </div>
+  </div>
+
+  <div class="tech-card">
+    <div class="tc-header">
+      <div class="tc-icon" style="background:#fff1f2">📦</div>
+      <div>
+        <div class="tc-name">zipfile · ElementTree</div>
+        <div class="tc-role">DOCX Manipulation</div>
+      </div>
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">unzip DOCX</span>
+      <span class="tc-tag">parse XML</span>
+      <span class="tc-tag">repack ZIP</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ 3. DATABASE SCHEMA ══ -->
+<div class="desc-box" style="border-left-color:#7c3aed;margin-bottom:16px">
+  <h3>⚙️ Lý do chọn từng công nghệ</h3>
+  <ul>
+    <li><strong>LangGraph:</strong> Cho phép định nghĩa pipeline dưới dạng đồ thị có trạng thái, hỗ trợ <code>interrupt_before</code> để dừng giữa chừng chờ human review — không thể làm được với LangChain thông thường.</li>
+    <li><strong>FastAPI + asyncpg:</strong> Async hoàn toàn, xử lý đồng thời nhiều pipeline mà không block. BackgroundTasks chạy LangGraph pipeline song song với API response.</li>
+    <li><strong>OpenAI GPT-4o với JSON mode:</strong> Đảm bảo output luôn là JSON hợp lệ, không cần xử lý parsing lỗi. Phù hợp với structured output yêu cầu <code>value + confidence + reason</code>.</li>
+    <li><strong>PostgreSQL + BYTEA:</strong> Lưu trực tiếp file <code>.docx</code> binary vào DB thay vì filesystem — đơn giản hóa backup, không cần quản lý file storage riêng.</li>
+    <li><strong>zipfile + ElementTree (Python stdlib):</strong> Không cần cài thêm thư viện nặng như LibreOffice hay OpenPyXL, giảm Docker image size và tránh lỗi dependency.</li>
+  </ul>
+</div>
+
+<div class="section-label">③ Database Schema (PostgreSQL)</div>
+<div class="db-schema" style="margin-bottom:28px">
+
+  <div class="db-table">
+    <div class="db-table-head" style="background:#eff6ff;color:#1d4ed8">
+      📋 templates
+    </div>
+    <div class="db-table-body">
+      <div class="db-col"><span class="db-col-pk">PK</span> id uuid</div>
+      <div class="db-col">name varchar</div>
+      <div class="db-col">filename varchar</div>
+      <div class="db-col">file_data <strong>BYTEA</strong></div>
+      <div class="db-col">file_size int</div>
+      <div class="db-col">is_active bool</div>
+    </div>
+  </div>
+
+  <div class="db-table">
+    <div class="db-table-head" style="background:#f0fdf4;color:#16a34a">
+      🟡 template_fields
+    </div>
+    <div class="db-table-body">
+      <div class="db-col"><span class="db-col-pk">PK</span> id uuid</div>
+      <div class="db-col"><span class="db-col-fk">FK</span> template_id</div>
+      <div class="db-col">field_key varchar</div>
+      <div class="db-col">para_idx int</div>
+      <div class="db-col">placeholder text</div>
+      <div class="db-col">context text</div>
+    </div>
+  </div>
+
+  <div class="db-table">
+    <div class="db-table-head" style="background:#fefce8;color:#92400e">
+      ⚙️ pipeline_runs
+    </div>
+    <div class="db-table-body">
+      <div class="db-col"><span class="db-col-pk">PK</span> id uuid</div>
+      <div class="db-col"><span class="db-col-fk">FK</span> template_id</div>
+      <div class="db-col">status varchar</div>
+      <div class="db-col">current_step int</div>
+      <div class="db-col">export_mode varchar</div>
+      <div class="db-col">langgraph_state <strong>JSONB</strong></div>
+    </div>
+  </div>
+
+  <div class="db-table">
+    <div class="db-table-head" style="background:#faf5ff;color:#6d28d9">
+      ✅ field_results
+    </div>
+    <div class="db-table-body">
+      <div class="db-col"><span class="db-col-pk">PK</span> id uuid</div>
+      <div class="db-col"><span class="db-col-fk">FK</span> run_id</div>
+      <div class="db-col"><span class="db-col-fk">FK</span> field_id</div>
+      <div class="db-col">ai_value text</div>
+      <div class="db-col">final_value text</div>
+      <div class="db-col">confidence varchar</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ 4. DOCKER ══ -->
+<div class="desc-box" style="border-left-color:#16a34a;margin-bottom:16px">
+  <h3>🗄️ Thiết kế Database</h3>
+  <ul>
+    <li><strong>templates:</strong> Lưu file <code>.docx</code> gốc dưới dạng <code>BYTEA</code>. Mỗi lần export sẽ đọc binary này để đảm bảo luôn dùng template gốc, không bị ảnh hưởng bởi các lần chạy trước.</li>
+    <li><strong>template_fields:</strong> Danh sách các ô tô vàng được extract lúc upload, lưu <code>para_idx</code> (vị trí paragraph) và <code>placeholder</code> (text gốc) để mapping khi replace.</li>
+    <li><strong>pipeline_runs:</strong> Mỗi lần chạy là một run độc lập. Cột <code>langgraph_state JSONB</code> lưu toàn bộ checkpoint state của LangGraph để có thể resume sau interrupt.</li>
+    <li><strong>field_results:</strong> Lưu song song <code>ai_value</code> (gốc của AI) và <code>final_value</code> (sau khi human chỉnh sửa) — giúp audit trail và đánh giá chất lượng AI theo thời gian.</li>
+  </ul>
+</div>
+
+<div class="section-label">④ Docker Compose — 3 Services</div>
+<div class="docker-bar">
+  <div class="docker-icon">🐳</div>
+  <div class="docker-info">
+    <h4>Docker Compose Network</h4>
+    <p>Tất cả services chạy trong cùng internal network · Volume pg_data persistent</p>
+  </div>
+  <div class="docker-svcs">
+    <div class="docker-svc">
+      <div class="docker-svc-name">bidv_db</div>
+      <div class="docker-svc-port">pgvector/pg16<br>:5432</div>
+    </div>
+    <div class="docker-svc">
+      <div class="docker-svc-name">bidv_backend</div>
+      <div class="docker-svc-port">FastAPI + uvicorn<br>:8000</div>
+    </div>
+    <div class="docker-svc">
+      <div class="docker-svc-name">bidv_nginx</div>
+      <div class="docker-svc-port">Reverse proxy<br>:8080</div>
+    </div>
+    <div class="docker-svc" style="background:#f0fdf4;border-color:#86efac">
+      <div class="docker-svc-name" style="color:#16a34a">bidv_pgadmin</div>
+      <div class="docker-svc-port">DB viewer<br>:5050</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="desc-box" style="border-left-color:#0078d4;margin-top:20px">
+  <h3>🐳 Deployment</h3>
+  <p>
+    Toàn bộ hệ thống chạy trong <strong>Docker Compose</strong> với 4 services trong cùng một internal network.
+    Nginx đóng vai trò reverse proxy: request đến <code>localhost:8080/api/*</code> được forward sang FastAPI backend <code>:8000</code>,
+    còn request tĩnh phục vụ frontend HTML từ <code>/usr/share/nginx/html</code>.
+  </p>
+  <p>
+    Volume <code>pg_data</code> persistent đảm bảo data không mất khi restart container.
+    pgAdmin (<code>:5050</code>) cho phép xem và query database trực tiếp qua giao diện web mà không cần cài thêm tool.
+  </p>
+  <div class="desc-note">
+    <strong>Khởi chạy:</strong> <code>docker compose up --build</code> — hệ thống tự động chờ PostgreSQL healthy trước khi start backend nhờ <code>depends_on: condition: service_healthy</code>.
+  </div>
+</div>
+
+</body>
+</html>

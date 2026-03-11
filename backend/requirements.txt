@@ -1,0 +1,31 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+
+# Database
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+sqlalchemy[asyncio]==2.0.30
+alembic==1.13.1
+pgvector==0.2.5
+
+# LangChain + LangGraph
+langchain==0.2.5
+langchain-anthropic==0.1.15
+langchain-community==0.2.5
+langgraph==0.1.19
+langsmith>=0.1.0
+# OpenAI integration for LangChain
+langchain_openai
+
+# Anthropic SDK
+anthropic==0.28.0
+
+# Utils
+python-dotenv==1.0.1
+pydantic==2.7.1
+pydantic-settings==2.3.0
+aiofiles==23.2.1
+defusedxml==0.7.1
+lxml>=4.9.0
