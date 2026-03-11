@@ -1063,9 +1063,12 @@ async function doUploadFiles() {
     // 6. Poll đến khi graph dừng tại interrupt extract_sources
     setStep(2,'active','Đang phân tích...');
     await pollUntilStatus(['awaiting_extract', 'reviewing', 'error'], () => {
+      // Ẩn Phase A để không thể click lại
+      document.getElementById('phaseUpload').style.display = 'none';
       document.getElementById('phaseExtract').style.display = 'block';
       setStep(2,'active','\u23f8 Chờ xác nhận trích xuất');
     });
+    return; // không re-enable button
 
   } catch(e) {
     setStep(2,'err','Lỗi');
@@ -1496,77 +1499,44 @@ function addLog(el, msg, cls='') {
 // ═══════════════════════════════════════════════════════════
 async function openPreview() {
   const modal = document.getElementById('previewModal');
-  modal.style.display = 'block';
+  modal.style.display = 'flex';
+  modal.style.flexDirection = 'column';
   document.body.style.overflow = 'hidden';
 
-  const content = document.getElementById('previewContent');
-  content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div class="spin"></div><div style="margin-top:10px;font-size:12px">Đang tải dữ liệu...</div></div>';
+  const contentEl = document.getElementById('previewContent');
 
+  // Load stats từ results
   try {
-    const r = await fetch(`${API}/pipeline/${currentRun}/results`);
-    const results = await r.json();
-
-    // Stats
+    const rs = await fetch(`${API}/pipeline/${currentRun}/results`);
+    const results = await rs.json();
+    const tmpl = templates.find(t => t.id === selTmplId) || {};
     const high = results.filter(x=>x.confidence==='high').length;
     const mid  = results.filter(x=>x.confidence==='mid').length;
     const low  = results.filter(x=>x.confidence==='low').length;
     document.getElementById('previewStats').innerHTML = `
-      <span style="font-size:11px;color:var(--green)">🟢 ${high} tự tin cao</span>
-      <span style="font-size:11px;color:var(--gold)">🟡 ${mid} trung bình</span>
-      <span style="font-size:11px;color:var(--red)">🔴 ${low} cần kiểm tra</span>
-      <span style="font-size:11px;color:var(--text3)">Tổng: ${results.length} trường</span>`;
+      <span style="background:rgba(6,214,160,.15);color:#06d6a0;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600">🟢 ${high} cao</span>
+      <span style="background:rgba(244,162,89,.15);color:#f4a259;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600">🟡 ${mid} TB</span>
+      <span style="background:rgba(239,71,111,.15);color:#ef476f;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600">🔴 ${low} thấp</span>`;
+    document.getElementById('previewTemplateName').textContent = tmpl.name || 'Báo cáo';
+  } catch {}
 
-    // Template name
-    document.getElementById('previewTemplateName').innerHTML =
-      `📋 Template: <strong style="color:var(--text2)">${(templates.find(t=>t.id===selTmplId)||{}).name || ''}</strong> &nbsp;·&nbsp; Run: <code>${currentRun?.substring(0,8)}…</code>`;
+  // Render trang giấy với iframe
+  contentEl.innerHTML = `
+    <div style="width:794px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);min-height:1123px">
+      <iframe id="previewIframe"
+        src="${API}/pipeline/${currentRun}/preview-html"
+        style="width:100%;min-height:1123px;border:none;display:block"
+        onload="autoResizeIframe(this)"
+      ></iframe>
+    </div>`;
 
-    // Render report-like preview
-    content.innerHTML = `
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:32px 36px;
-        font-family:'Times New Roman',serif;font-size:13px;line-height:1.9;color:#1a1a1a;
-        box-shadow:0 2px 8px rgba(0,0,0,.08)">
+}
 
-        <div style="text-align:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #1a1a1a">
-          <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">
-            NGÂN HÀNG TMCP ĐẦU TƯ VÀ PHÁT TRIỂN VIỆT NAM
-          </div>
-          <div style="font-size:11px;color:#555;margin-bottom:16px">BIDV</div>
-          <div style="font-size:15px;font-weight:700;text-transform:uppercase">
-            ${(templates.find(t=>t.id===selTmplId)||{}).name || 'BÁO CÁO'}
-          </div>
-        </div>
-
-        ${results.map((r, i) => {
-          const conf = r.confidence;
-          const val  = r.final_value || r.ai_value || '';
-          const confColor = conf==='high'?'#059669':conf==='low'?'#dc2626':'#d97706';
-          const confLabel = conf==='high'?'Cao':conf==='low'?'Thấp':'TB';
-          const bgColor   = conf==='high'?'rgba(5,150,105,.06)':conf==='low'?'rgba(220,38,38,.06)':'rgba(217,119,6,.06)';
-          return `
-          <div style="margin-bottom:18px;padding:12px 16px;border-radius:6px;
-            border-left:3px solid ${confColor};background:${bgColor}">
-            <div style="font-size:9px;font-weight:700;color:${confColor};letter-spacing:1px;
-              text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px">
-              <span>TRƯỜNG #${(i+1).toString().padStart(2,'0')}</span>
-              <span style="background:${confColor};color:#fff;padding:1px 6px;border-radius:10px;font-size:8px">
-                ${confLabel}
-              </span>
-              <span style="color:#94a3b8;font-weight:400;font-size:9px">${r.context?.substring(0,60)}…</span>
-            </div>
-            <div style="font-size:13px;color:#1a1a1a;line-height:1.7">${val || '<em style="color:#94a3b8">— Chưa có nội dung —</em>'}</div>
-            ${r.reason ? `<div style="font-size:10px;color:#94a3b8;margin-top:6px;font-style:italic">💬 ${r.reason}</div>` : ''}
-          </div>`;
-        }).join('')}
-
-        <div style="margin-top:32px;padding-top:20px;border-top:1px solid #e2e8f0;
-          font-size:10px;color:#94a3b8;text-align:center">
-          Được tạo tự động bởi BIDV AI Agent &nbsp;·&nbsp; Nhóm NCCN - Ban Công nghệ
-        </div>
-      </div>`;
-
-  } catch(e) {
-    content.innerHTML = `<div style="color:var(--red);padding:20px;font-size:12px">✗ Lỗi tải dữ liệu: ${e.message}</div>`;
-  }
+function autoResizeIframe(iframe) {
+  try {
+    const h = iframe.contentDocument?.body?.scrollHeight;
+    if (h && h > 400) iframe.style.minHeight = h + 'px';
+  } catch {}
 }
 
 function closePreview() {
@@ -1619,47 +1589,55 @@ init();
 </footer>
 
 <!-- Preview Modal -->
-<div id="previewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
-  z-index:1000;overflow-y:auto;padding:40px 20px">
-  <div style="max-width:800px;margin:0 auto;background:var(--bg3);border-radius:var(--r);
-    border:1px solid var(--border2);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+<div id="previewModal" style="display:none;position:fixed;inset:0;z-index:1000;background:#2d2d2d">
 
-    <!-- Modal header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;
-      padding:16px 22px;border-bottom:1px solid var(--border2);background:var(--bg2)">
-      <div>
-        <div style="font-size:14px;font-weight:700;color:var(--text)">📄 Xem trước báo cáo</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">Final Report Preview</div>
+  <!-- ── Toolbar ── -->
+  <div style="height:52px;background:#1e1e1e;border-bottom:1px solid #3a3a3a;
+    display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0">
+
+    <!-- Left: icon + title -->
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <div style="width:28px;height:28px;background:#1565c0;border-radius:4px;
+        display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📄</div>
+      <div style="overflow:hidden">
+        <div id="previewTemplateName" style="font-size:12px;font-weight:600;color:#e8e8e8;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div style="font-size:10px;color:#888">Xem trước báo cáo</div>
       </div>
-      <button onclick="closePreview()" style="background:none;border:none;color:var(--text3);
-        font-size:20px;cursor:pointer;padding:4px 8px;border-radius:4px"
-        onmouseover="this.style.background='var(--border2)'"
+    </div>
+
+    <!-- Center: stats chips -->
+    <div id="previewStats" style="display:flex;gap:8px;margin-left:auto;margin-right:auto"></div>
+
+    <!-- Right: export + close -->
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:0;background:#2d2d2d;border:1px solid #444;border-radius:5px;overflow:hidden">
+        <div style="padding:0 10px;font-size:10px;color:#aaa;border-right:1px solid #444;white-space:nowrap">Định dạng</div>
+        <select id="previewExportMode" style="background:transparent;border:none;color:#e8e8e8;
+          padding:6px 10px;font-size:11px;outline:none;cursor:pointer">
+          <option value="clean">Clean (.docx)</option>
+          <option value="tracked">Tracked changes</option>
+        </select>
+      </div>
+      <button onclick="downloadFromPreview()" style="display:flex;align-items:center;gap:6px;
+        background:#1565c0;border:none;color:#fff;padding:7px 14px;border-radius:5px;
+        font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap"
+        onmouseover="this.style.background='#1976d2'"
+        onmouseout="this.style.background='#1565c0'">
+        ⬇ Tải xuống
+      </button>
+      <div id="previewDlResult" style="font-size:10px;color:#aaa"></div>
+      <button onclick="closePreview()" style="background:none;border:1px solid #444;color:#aaa;
+        width:30px;height:30px;border-radius:5px;font-size:16px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0"
+        onmouseover="this.style.background='#3a3a3a'"
         onmouseout="this.style.background='none'">✕</button>
     </div>
+  </div>
 
-    <!-- Stats bar -->
-    <div id="previewStats" style="padding:12px 22px;border-bottom:1px solid var(--border2);
-      background:var(--bg2);display:flex;gap:16px;flex-wrap:wrap"></div>
-
-    <!-- Template name -->
-    <div id="previewTemplateName" style="padding:10px 22px;border-bottom:1px solid var(--border2);
-      font-size:11px;color:var(--text3);font-family:monospace"></div>
-
-    <!-- Content -->
-    <div id="previewContent" style="padding:22px;max-height:60vh;overflow-y:auto"></div>
-
-    <!-- Footer actions -->
-    <div style="padding:16px 22px;border-top:1px solid var(--border2);background:var(--bg2);
-      display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <select id="previewExportMode" style="background:var(--bg);border:1px solid var(--border2);
-        color:var(--text);border-radius:var(--rs);padding:7px 10px;font-size:12px">
-        <option value="clean">Clean (bỏ highlight)</option>
-        <option value="tracked">Tracked (giữ màu review)</option>
-      </select>
-      <button class="btn btn-primary" onclick="downloadFromPreview()">📥 Tải xuống</button>
-      <button class="btn btn-ghost" onclick="closePreview()">Đóng</button>
-      <div id="previewDlResult" style="font-size:11px;margin-left:auto"></div>
-    </div>
+  <!-- ── Document area ── -->
+  <div style="height:calc(100vh - 52px);overflow-y:auto;background:#525659;padding:32px 0" id="previewScrollArea">
+    <div id="previewContent" style="max-width:794px;margin:0 auto"></div>
   </div>
 </div>
 
