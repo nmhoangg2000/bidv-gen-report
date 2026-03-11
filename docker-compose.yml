@@ -32,10 +32,10 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://bidv:bidv_secret@db:5432/bidv_agent
       DATABASE_URL_SYNC: postgresql://bidv:bidv_secret@db:5432/bidv_agent
-      OPENAI_API_KEY: 
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       PYTHONUNBUFFERED: "1"
       LANGCHAIN_TRACING_V2: "true"
-      LANGCHAIN_API_KEY:  # key vừa copy
+      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY} # key vừa copy
       LANGCHAIN_PROJECT: "bidv-agent"             # tên project trên LangSmith
       LANGCHAIN_ENDPOINT: "https://api.smith.langchain.com"
       # OPENAI_API_KEY: "${OPENAI_API_KEY}"  
