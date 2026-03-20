@@ -3,12 +3,10 @@ BIDV Report AI Agent — LangGraph Pipeline (OpenAI)
 Graph: analyze_template → upload_sources ⏸ → extract_sources ⏸ → write_fields ⏸ → human_review → export_doc
 """
 
-from curses import raw
 import json
 import os
 from typing import Annotated, Dict, List, Optional, TypedDict
-from urllib import response
-from langchain_core.messages import HumanMessage, SystemMessage
+
 from openai import AsyncOpenAI
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
@@ -35,24 +33,7 @@ def get_ls_callbacks():
 def get_client() -> AsyncOpenAI:
     return AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
 
-from langchain_aws import ChatBedrockConverse
 
-# def get_llm(max_tokens: int = 800) -> ChatBedrockConverse:
-#     """Khởi tạo LLM từ AWS Bedrock — dùng boto3.Session để truyền credentials."""
-#     import boto3
-#     session = boto3.Session(
-#         aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-#         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-#         aws_session_token=os.getenv("AWS_SESSION_TOKEN"),  # optional, dùng khi có STS
-#         region_name=os.getenv("AWS_REGION", "us-east-1"),
-#     )
-#     client = session.client("bedrock-runtime")
-#     return ChatBedrockConverse(
-#         model=os.getenv("BEDROCK_MODEL", "anthropic.claude-3-haiku-20240307"),
-#         client=client,
-#         temperature=0.2,
-#         max_tokens=max_tokens,
-#     )
 # ─── State Schema ─────────────────────────────────────────────────────────────
 
 class FieldResult(TypedDict):
@@ -72,7 +53,7 @@ class PipelineState(TypedDict):
     template_id:      str
     template_name:    str
     template_fields:  List[Dict]
-    source_docs:      List[Dict]   # inject sau interrupt upload_sources
+    source_docs:      List[Dict]
     source_context:   str
     field_results:    List[FieldResult]
     write_progress:   int
@@ -100,9 +81,7 @@ async def node_analyze_template(state: PipelineState) -> PipelineState:
     }
 
 
-# ─── Node 2a: upload_sources (interrupt trước node này) ───────────────────────
-# Node này chỉ đánh dấu status — dữ liệu source_docs được inject từ bên ngoài
-# khi người dùng bấm "Xác nhận Upload"
+# ─── Node 2a: upload_sources ──────────────────────────────────────────────────
 
 async def node_upload_sources(state: PipelineState) -> PipelineState:
     docs = state.get("source_docs", [])
@@ -117,7 +96,6 @@ async def node_upload_sources(state: PipelineState) -> PipelineState:
 
 
 # ─── Node 2b: extract_sources (interrupt trước node này) ──────────────────────
-# Node này thực sự ghép text — chạy sau khi người dùng bấm "Xác nhận Trích xuất"
 
 async def node_extract_sources(state: PipelineState) -> PipelineState:
     docs = state.get("source_docs", [])
@@ -145,12 +123,19 @@ async def node_write_fields(state: PipelineState) -> PipelineState:
     fields  = state["template_fields"]
     context = state.get("source_context", "")
     model   = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    # Giới hạn concurrent calls để tránh rate limit (max 8 parallel)
-    semaphore = asyncio.Semaphore(int(os.getenv("OPENAI_CONCURRENCY", "8")))
-    # semaphore = asyncio.Semaphore(int(os.getenv("BEDROCK_CONCURRENCY", "8")))
+    semaphore = asyncio.Semaphore(int(os.getenv("OPENAI_CONCURRENCY", "3")))
 
-    system_msg = """Bạn là chuyên gia soạn thảo văn bản hành chính ngân hàng BIDV.
+    from datetime import datetime
+    today = datetime.now()
+    today_str  = today.strftime("%d/%m/%Y")           # 19/03/2026
+    month_year = today.strftime("tháng %m/%Y")        # tháng 03/2026
+    quarter    = f"Quý {(today.month-1)//3+1}/{today.year}"  # Quý I/2026
+
+    system_msg = f"""Bạn là chuyên gia soạn thảo văn bản hành chính ngân hàng BIDV.
 Nhiệm vụ: điền nội dung vào các trường còn trống trong báo cáo dựa trên tài liệu nguồn được cung cấp.
+
+NGÀY HIỆN TẠI: {today_str} ({month_year}, {quarter})
+Khi placeholder chứa DD/MM/YYYY, ngày tháng, hoặc yêu cầu điền ngày — dùng ngày thực tế ở trên.
 
 VĂN PHONG BẮT BUỘC:
 - Ngôn ngữ trang trọng, hành chính — tuyệt đối không dùng ngôn ngữ thông thường
@@ -170,7 +155,13 @@ VÍ DỤ VĂN PHONG ĐÚNG:
 Luôn trả lời bằng JSON hợp lệ, không thêm markdown hay giải thích ngoài JSON."""
 
     async def call_one(field) -> FieldResult:
+        field_type = field.get("field_type", "sentence")
+        type_hint  = field.get("type_hint", "")
+
         user_msg = f"""Điền nội dung vào trường còn trống trong báo cáo BIDV.
+
+LOẠI TRƯỜNG: {field_type.upper()}
+{type_hint}
 
 NGỮ CẢNH ĐOẠN VĂN (phần văn bản xung quanh trường cần điền):
 {field['context']}
@@ -181,15 +172,12 @@ NỘI DUNG CẦN THAY THẾ (placeholder hiện tại):
 TÀI LIỆU NGUỒN (dùng để tìm số liệu và thông tin chính xác):
 {context[:14000]}
 
-HƯỚNG DẪN:
-1. Ưu tiên tìm số liệu/thông tin CỤ THỂ từ tài liệu nguồn
+HƯỚNG DẪN CHUNG:
+1. Ưu tiên tìm thông tin CỤ THỂ từ tài liệu nguồn
 2. Nội dung phải PHÙ HỢP với ngữ cảnh đoạn văn xung quanh
-3. Độ dài output phải tương xứng với placeholder:
-   - Placeholder ngắn (< 50 ký tự): điền 1 câu hoặc 1 cụm từ
-   - Placeholder trung bình (50-200 ký tự): điền 2-4 câu
-   - Placeholder dài (> 200 ký tự): điền đầy đủ theo độ dài gốc, có thể nhiều đoạn
-4. Giữ nguyên định dạng nếu placeholder có cấu trúc đặc biệt (danh sách, bảng, xuống dòng...)
-5. KHÔNG cắt ngắn nội dung nếu placeholder dài — viết đủ ý
+3. Tuân thủ hướng dẫn LOẠI TRƯỜNG ở trên
+4. Giữ nguyên định dạng nếu placeholder có cấu trúc đặc biệt (danh sách, bảng...)
+5. KHÔNG cắt ngắn nội dung nếu placeholder dài
 
 Trả về JSON (chỉ JSON, không markdown):
 {{
@@ -203,19 +191,18 @@ Quy tắc confidence:
 - mid : suy luận có căn cứ từ ngữ cảnh, không có số liệu cụ thể
 - low : không có tài liệu nguồn hoặc không tìm thấy thông tin liên quan, tự generate"""
 
+        ph_len = len(field.get("placeholder", ""))
+        if ph_len < 50:
+            max_tok = 300
+        elif ph_len < 200:
+            max_tok = 800
+        elif ph_len < 500:
+            max_tok = 1600
+        else:
+            max_tok = 3000
+
         async with semaphore:
             try:
-                # max_tokens tự động theo độ dài placeholder
-                ph_len = len(field.get("placeholder", ""))
-                if ph_len < 50:
-                    max_tok = 300
-                elif ph_len < 200:
-                    max_tok = 800
-                elif ph_len < 500:
-                    max_tok = 1600
-                else:
-                    max_tok = 3000
-
                 response = await client.chat.completions.create(
                     model=model,
                     messages=[
@@ -229,35 +216,6 @@ Quy tắc confidence:
                 parsed = json.loads(response.choices[0].message.content.strip())
             except Exception as e:
                 parsed = {"value": "", "confidence": "low", "reason": f"Lỗi: {e}"}
-                # max_tokens động theo độ dài placeholder
-                
-        # ph_len = len(field.get("placeholder", ""))
-        # if ph_len < 50:
-        #     max_tok = 300
-        # elif ph_len < 200:
-        #     max_tok = 800
-        # elif ph_len < 500:
-        #     max_tok = 1600
-        # else:
-        #     max_tok = 3000
- 
-        # async with semaphore:
-        #     try:
-        #         llm = get_llm(max_tokens=max_tok)
-        #         response = await llm.ainvoke([
-        #             SystemMessage(content=system_msg),
-        #             HumanMessage(content=user_msg),
-        #         ])
-        #         raw = response.content.strip()
-        #         # Loại bỏ markdown code fence nếu model trả về
-        #         if raw.startswith("```"):
-        #             raw = raw.split("```")[1]
-        #             if raw.startswith("json"):
-        #                 raw = raw[4:]
-        #         parsed = json.loads(raw.strip())
-        #     except Exception as e:
-        #         parsed = {"value": "", "confidence": "low", "reason": f"Lỗi: {e}"}
-
 
         key = field.get("key") or field.get("field_key", "")
         return FieldResult(
@@ -272,7 +230,7 @@ Quy tắc confidence:
             approved    = False,
         )
 
-    # Gọi tất cả fields song song — thay vì tuần tự
+    # Gọi tất cả fields song song
     results: List[FieldResult] = list(await asyncio.gather(*[call_one(f) for f in fields]))
 
     return {
@@ -328,8 +286,8 @@ async def node_export_doc(state: PipelineState) -> PipelineState:
 def build_graph() -> StateGraph:
     builder = StateGraph(PipelineState)
     builder.add_node("analyze_template", node_analyze_template)
-    builder.add_node("upload_sources",   node_upload_sources)   # 2a
-    builder.add_node("extract_sources",  node_extract_sources)  # 2b
+    builder.add_node("upload_sources",   node_upload_sources)
+    builder.add_node("extract_sources",  node_extract_sources)
     builder.add_node("write_fields",     node_write_fields)
     builder.add_node("human_review",     node_human_review)
     builder.add_node("export_doc",       node_export_doc)
@@ -344,7 +302,7 @@ def build_graph() -> StateGraph:
     return builder
 
 
-# compiled_graph KHÔNG có checkpointer — dùng cho LangGraph Studio/API
+# compiled_graph — dùng cho LangGraph Studio/API (không có checkpointer)
 compiled_graph = build_graph().compile(
     interrupt_before=["extract_sources", "human_review"],
 )
