@@ -23,7 +23,10 @@ body::before{content:'';position:fixed;inset:0;
 header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-bottom:1px solid var(--border2);margin-bottom:28px}
 .logo{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--accent2));
   border-radius:var(--rs);display:flex;align-items:center;justify-content:center;
-  font-size:22px;box-shadow:0 0 20px rgba(0,180,216,.3);flex-shrink:0}
+  box-shadow:0 0 20px rgba(0,180,216,.3);flex-shrink:0;overflow:hidden;padding:4px}
+.logo img{width:100%;height:100%;object-fit:contain;display:block}
+.hero-avatar{width:72px;height:72px;display:block;object-fit:contain;margin:0 auto 14px;
+  filter:drop-shadow(0 8px 16px rgba(0,120,212,.18))}
 .htext h1{font-size:19px;font-weight:700;
   color:#1a1a1a;-webkit-text-fill-color:#1a1a1a}
 .htext p{font-size:12px;color:var(--text3);margin-top:2px}
@@ -147,8 +150,13 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
 .l .rev-conf{background:rgba(239,71,111,.1);color:var(--red)}
 .rev-ta{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
   color:var(--text);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;
-  padding:7px 9px;resize:vertical;min-height:50px;outline:none;transition:border-color .2s;line-height:1.5}
+  padding:7px 9px;resize:none;min-height:36px;outline:none;transition:border-color .2s,background .2s;
+  line-height:1.6;overflow:hidden;box-sizing:border-box}
 .rev-ta:focus{border-color:rgba(0,180,216,.4)}
+.rev-ta:disabled{background:var(--bg3);color:var(--text2);cursor:default;
+  border-color:var(--border2);opacity:1}
+.rev-ta.locked{background:var(--bg3);color:var(--text2);cursor:not-allowed;
+  border-color:var(--border2)}
 .rev-reason{font-size:10px;color:var(--text3);margin-top:4px;font-style:italic}
 
 /* Run history */
@@ -286,7 +294,7 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
 <div class="wrap">
 
 <header>
-  <div class="logo">🤖</div>
+  <div class="logo"><img src="./static/bidv_icon_bot.png" alt="BIDV bot avatar"></div>
   <div class="htext">
     <h1>BIDV Report AI Agent</h1>
     <p>LangGraph Pipeline · PostgreSQL · Docker</p>
@@ -345,7 +353,7 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
   <!-- ── Main content ── -->
   <div id="mainContent">
     <div style="text-align:center;padding:60px 20px;color:var(--text3)">
-      <div style="font-size:42px;margin-bottom:14px">🤖</div>
+      <img class="hero-avatar" src="./static/bidv_icon_bot.png" alt="BIDV bot avatar">
       <div style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:8px">Chọn một template để bắt đầu</div>
       <div style="font-size:12px;max-width:380px;margin:0 auto;line-height:1.7">
         Pipeline sẽ tự động: phân tích template → trích xuất tài liệu nguồn → AI điền nội dung → bạn review → xuất file
@@ -1241,7 +1249,9 @@ async function loadReview() {
             <div class="rev-ctx">${r.context.substring(0,100)}${r.context.length>100?'…':''}</div>
             <span class="rev-conf">${lbl}</span>
           </div>
-          <textarea class="rev-ta" id="rv-${r.field_key}">${r.final_value||r.ai_value||''}</textarea>
+          <textarea class="rev-ta" id="rv-${r.field_key}"
+  oninput="autoResizeTa(this)"
+  >${r.final_value||r.ai_value||''}</textarea>
           ${r.reason?`<div class="rev-reason">💬 ${r.reason}</div>`:''}
         </div>`;
       }).join('')}
@@ -1252,11 +1262,19 @@ async function loadReview() {
         <option value="clean">Clean (bỏ highlight)</option>
         <option value="tracked">Tracked (giữ màu review)</option>
       </select>
-      <button class="btn btn-green" onclick="submitReview()">✅ Phê duyệt & Tiếp tục</button>
+      <button class="btn btn-green" id="btnSubmitReview" onclick="submitReview()">✅ Phê duyệt & Tiếp tục</button>
     </div>`;
+
+  // Auto-resize tất cả textarea sau khi render
+  setTimeout(() => {
+    document.querySelectorAll('.rev-ta').forEach(ta => autoResizeTa(ta));
+  }, 50);
 }
 
 async function submitReview() {
+  const btn = document.getElementById('btnSubmitReview');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang xử lý...'; }
+
   const results = await (await fetch(`${API}/pipeline/${currentRun}/results`)).json();
   const edits   = {};
   results.forEach(r => {
@@ -1265,14 +1283,25 @@ async function submitReview() {
   });
   const mode = document.getElementById('exportMode').value;
 
-  setStep(4,'done','✓ Đã duyệt');
-
   const r = await fetch(`${API}/pipeline/${currentRun}/approve`, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ edits, export_mode: mode })
   });
-  if (!r.ok) { toast('Approve lỗi','error'); return; }
+  if (!r.ok) { 
+    toast('Approve lỗi','error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '✅ Phê duyệt & Tiếp tục'; }
+    return; 
+  }
 
+  // Lock toàn bộ textarea sau khi approve thành công
+  document.querySelectorAll('.rev-ta').forEach(ta => {
+    ta.disabled = true;
+    ta.classList.add('locked');
+  });
+  if (btn) { btn.disabled = true; btn.innerHTML = '✅ Đã phê duyệt'; btn.style.opacity = '.6'; }
+  if (document.getElementById('exportMode')) document.getElementById('exportMode').disabled = true;
+
+  setStep(4,'done','✓ Đã duyệt');
   renderExport(mode);
 }
 
@@ -1530,6 +1559,11 @@ async function openPreview() {
       ></iframe>
     </div>`;
 
+}
+
+function autoResizeTa(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(36, ta.scrollHeight) + 'px';
 }
 
 function autoResizeIframe(iframe) {
