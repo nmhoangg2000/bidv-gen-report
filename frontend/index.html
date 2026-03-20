@@ -159,6 +159,22 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
   border-color:var(--border2)}
 .rev-reason{font-size:10px;color:var(--text3);margin-top:4px;font-style:italic}
 
+/* Dual view cho mid/low */
+.rev-dual{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.rev-col-label{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.rev-col-orig{color:var(--text3)}
+.rev-col-ai{color:var(--accent)}
+.rev-orig-box{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
+  padding:7px 9px;font-size:12px;color:var(--text3);line-height:1.6;font-style:italic;
+  min-height:36px;white-space:pre-wrap;word-break:break-word}
+.rev-high-val{background:rgba(6,214,160,.06);border:1px solid rgba(6,214,160,.2);
+  border-radius:6px;padding:7px 9px;font-size:12px;color:var(--text2);line-height:1.6;
+  min-height:36px;white-space:pre-wrap;word-break:break-word}
+.rev-auto-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;
+  background:rgba(6,214,160,.12);border:1px solid rgba(6,214,160,.25);color:var(--green);
+  padding:2px 8px;border-radius:8px;margin-left:auto}
+
 /* Run history */
 .run-list{display:flex;flex-direction:column;gap:6px}
 .run-item{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
@@ -187,10 +203,25 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
 .src-name{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
 .src-meta{font-size:9px;color:var(--text3);font-family:monospace}
-.src-del{position:absolute;top:8px;right:8px;background:none;border:none;
-  color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:all .15s}
+.src-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:all .15s}
 .src-card:hover .src-del{opacity:1}
 .src-del:hover{color:var(--red) !important}
+.src-action-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:all .15s}
+.src-card:hover .src-action-btn{opacity:1}
+.src-action-btn:hover{color:var(--accent) !important}
+
+/* Folder groups */
+.src-folder-group{margin-bottom:8px}
+.src-folder-header{display:flex;align-items:center;gap:6px;padding:7px 10px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);
+  cursor:pointer;transition:all .15s;user-select:none}
+.src-folder-header:hover{border-color:var(--accent);background:rgba(0,120,212,.06)}
+.src-folder-icon{font-size:13px}
+.src-folder-name{font-size:11px;font-weight:700;color:var(--text2);flex:1}
+.src-folder-count{font-size:9px;font-weight:700;background:rgba(0,120,212,.12);
+  color:var(--accent);padding:1px 6px;border-radius:8px}
+.src-folder-chevron{font-size:10px;color:var(--text3);transition:all .2s}
+.src-folder-body{padding-top:5px;display:flex;flex-direction:column;gap:5px}
 
 /* Checkbox list in step 2 */
 .src-check-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;
@@ -215,75 +246,7 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
 .toast.info{border-color:rgba(0,180,216,.3);color:var(--accent)}
 @keyframes slideUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-/* ── Monitor Panel ── */
-#monitorPanel{margin-top:18px;background:var(--surface);border:1px solid var(--border2);
-  border-radius:var(--r);overflow:hidden}
-.mon-header{display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border2)}
-.mon-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;
-  display:flex;align-items:center;gap:7px}
-.mon-tabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:4px;overflow:hidden}
-.mon-tab{padding:4px 12px;font-size:10px;font-weight:600;cursor:pointer;color:var(--text3);
-  background:var(--bg3);transition:all .15s;letter-spacing:.3px}
-.mon-tab.active{background:var(--accent);color:#fff}
-.mon-body{padding:14px 16px;min-height:180px}
 
-/* Graph */
-.lg-graph{display:flex;flex-direction:column;align-items:center;gap:0;position:relative}
-.lg-node{display:flex;align-items:center;justify-content:space-between;
-  width:260px;padding:8px 14px;border-radius:6px;border:1.5px solid var(--border2);
-  background:var(--bg3);font-size:11px;font-weight:600;color:var(--text2);
-  transition:all .3s;position:relative;z-index:1}
-.lg-node.active{border-color:var(--accent);background:rgba(0,119,182,.08);color:var(--accent);
-  box-shadow:0 0 0 3px rgba(0,119,182,.15)}
-.lg-node.done{border-color:var(--green);background:rgba(6,214,160,.07);color:var(--green)}
-.lg-node.interrupt{border-color:var(--gold);background:rgba(244,162,89,.08);color:var(--gold)}
-.lg-node.error{border-color:var(--red);background:rgba(239,71,111,.08);color:var(--red)}
-.lg-node .node-icon{font-size:14px;width:20px;text-align:center}
-.lg-node .node-label{flex:1;padding:0 10px}
-.lg-node .node-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px}
-.nb-done{background:rgba(6,214,160,.15);color:var(--green)}
-.nb-active{background:rgba(0,119,182,.15);color:var(--accent);animation:pulse-badge 1.5s infinite}
-.nb-wait{background:rgba(244,162,89,.15);color:var(--gold)}
-.nb-idle{background:var(--bg2);color:var(--text3)}
-.nb-err{background:rgba(239,71,111,.15);color:var(--red)}
-@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.4}}
-.lg-edge{width:2px;height:20px;background:var(--border2);margin:0 auto;position:relative;z-index:0}
-.lg-edge.done-edge{background:var(--green)}
-.lg-edge.active-edge{background:var(--accent);animation:flow-edge 1s linear infinite}
-@keyframes flow-edge{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}
-.lg-interrupt-badge{width:260px;padding:4px 14px;border-radius:4px;
-  background:rgba(244,162,89,.12);border:1px dashed var(--gold);
-  font-size:9px;font-weight:700;color:var(--gold);letter-spacing:.5px;text-align:center}
-.lg-start,.lg-end{width:80px;padding:5px;border-radius:50px;font-size:10px;font-weight:700;
-  text-align:center;letter-spacing:.5px}
-.lg-start{background:rgba(139,92,246,.1);border:1.5px solid var(--purple);color:var(--purple)}
-.lg-end{background:rgba(6,214,160,.1);border:1.5px solid var(--green);color:var(--green)}
-
-/* Timeline */
-.tl-list{display:flex;flex-direction:column;gap:0;font-size:11px}
-.tl-item{display:flex;gap:12px;padding:6px 0;border-left:2px solid var(--border2);
-  padding-left:14px;position:relative}
-.tl-item:before{content:'';position:absolute;left:-5px;top:10px;width:8px;height:8px;
-  border-radius:50%;background:var(--border2)}
-.tl-item.tl-done:before{background:var(--green)}
-.tl-item.tl-active:before{background:var(--accent);animation:pulse-badge 1.5s infinite;
-  box-shadow:0 0 0 3px rgba(0,119,182,.2)}
-.tl-item.tl-wait:before{background:var(--gold)}
-.tl-item.tl-err:before{background:var(--red)}
-.tl-time{font-family:monospace;font-size:9px;color:var(--text3);white-space:nowrap;min-width:42px;margin-top:1px}
-.tl-content{flex:1}
-.tl-label{font-weight:600;color:var(--text2)}
-.tl-desc{font-size:10px;color:var(--text3);margin-top:1px}
-
-/* State Inspector */
-.state-kv{display:flex;flex-direction:column;gap:4px}
-.state-row{display:flex;gap:8px;align-items:flex-start;padding:5px 8px;
-  background:var(--bg);border-radius:4px;font-size:11px}
-.state-key{font-family:monospace;font-size:10px;color:var(--accent);min-width:140px;flex-shrink:0;margin-top:1px}
-.state-val{color:var(--text2);font-size:10px;font-family:monospace;word-break:break-all;
-  max-height:40px;overflow:hidden;text-overflow:ellipsis}
-.state-val.expand{max-height:none}
 
 .spin{width:12px;height:12px;border:2px solid rgba(139,92,246,.3);border-top-color:var(--purple);
   border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
@@ -365,7 +328,7 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
 </div><!-- /wrap -->
 
 <script>
-const API = '/api';   // proxied by Nginx
+const API = '/api';
 let templates   = [];
 let selTmplId   = null;
 let currentRun  = null;
@@ -375,246 +338,7 @@ let uploadedSrcIds = [];
 let uploadedDocs   = [];
 
 // ═══════════════════════════════════════════════════════════
-// LANGGRAPH MONITOR
-// ═══════════════════════════════════════════════════════════
-
-const GRAPH_NODES = [
-  { id: 'analyze_template', label: 'Phân tích Template',   icon: '🔍', interrupt: false },
-  { id: 'upload_sources',   label: 'Upload Tài liệu',      icon: '📂', interrupt: false },
-  { id: 'extract_sources',  label: 'Trích xuất Văn bản',   icon: '✂️',  interrupt: true  },
-  { id: 'write_fields',     label: 'AI Điền Nội dung',     icon: '✍️',  interrupt: false },
-  { id: 'human_review',     label: 'Human Review',         icon: '👁️',  interrupt: true  },
-  { id: 'export_doc',       label: 'Xuất Báo cáo',         icon: '📄', interrupt: false },
-];
-
-const STATUS_NODE_MAP = {
-  'created':         null,
-  'analyzing':       'analyze_template',
-  'awaiting_upload': 'upload_sources',
-  'uploading':       'upload_sources',
-  'awaiting_extract':'extract_sources',
-  'extracting':      'extract_sources',
-  'writing':         'write_fields',
-  'reviewing':       'human_review',
-  'approved':        'human_review',
-  'exporting':       'export_doc',
-  'done':            'export_doc',
-  'error':           null,
-};
-
-const DONE_STATUSES = ['reviewing','approved','exporting','done'];
-const DONE_NODES_MAP = {
-  'analyzing':        [],
-  'awaiting_upload':  ['analyze_template'],
-  'uploading':        ['analyze_template'],
-  'awaiting_extract': ['analyze_template','upload_sources'],
-  'extracting':       ['analyze_template','upload_sources'],
-  'writing':          ['analyze_template','upload_sources','extract_sources'],
-  'reviewing':        ['analyze_template','upload_sources','extract_sources','write_fields'],
-  'approved':         ['analyze_template','upload_sources','extract_sources','write_fields'],
-  'exporting':        ['analyze_template','upload_sources','extract_sources','write_fields','human_review'],
-  'done':             ['analyze_template','upload_sources','extract_sources','write_fields','human_review','export_doc'],
-};
-
-let monitorData = { status: null, timeline: [], stateSnap: {} };
-let monTab = 'graph';
-let monitorTimer = null;
-
-function switchMonTab(tab) {
-  ['graph','timeline','state'].forEach(t => {
-    document.getElementById(`mtab-${t}`)?.classList.toggle('active', t === tab);
-    const el = document.getElementById(`mon-${t}`);
-    if (el) el.style.display = t === tab ? 'block' : 'none';
-  });
-  monTab = tab;
-  renderMonTab();
-}
-
-function showMonitor(runId) {
-  const panel = document.getElementById('monitorPanel');
-  if (!panel) return;
-  panel.style.display = 'block';
-  const rid = document.getElementById('monRunId');
-  if (rid) rid.textContent = runId ? `#${runId.substring(0,8)}` : '';
-  startMonitorPolling(runId);
-}
-
-function hideMonitor() {
-  stopMonitorPolling();
-  const panel = document.getElementById('monitorPanel');
-  if (panel) panel.style.display = 'none';
-}
-
-function startMonitorPolling(runId) {
-  stopMonitorPolling();
-  monitorData.timeline = [];
-  monitorData.stateSnap = {};
-  pollMonitor(runId);
-  monitorTimer = setInterval(() => pollMonitor(runId), 2000);
-}
-
-function stopMonitorPolling() {
-  if (monitorTimer) { clearInterval(monitorTimer); monitorTimer = null; }
-}
-
-async function pollMonitor(runId) {
-  if (!runId) return;
-  try {
-    const r = await fetch(`${API}/pipeline/${runId}`);
-    if (!r.ok) return;
-    const run = await r.json();
-
-    // Update dot color
-    const dot = document.getElementById('monDot');
-    if (dot) {
-      dot.style.background = run.status === 'done' ? 'var(--green)'
-        : run.status === 'error' ? 'var(--red)'
-        : run.status?.startsWith('awaiting') ? 'var(--gold)'
-        : 'var(--accent)';
-      dot.style.animation = ['done','error'].includes(run.status) ? 'none' : 'pulse-dot 1.5s infinite';
-    }
-
-    // Build timeline entry
-    const now = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    const last = monitorData.timeline[monitorData.timeline.length - 1];
-    if (!last || last.status !== run.status) {
-      const stepLabels = {
-        created:'Pipeline khởi tạo', analyzing:'Đang phân tích template',
-        awaiting_upload:'Chờ upload tài liệu', uploading:'Đang upload',
-        awaiting_extract:'Chờ xác nhận trích xuất', extracting:'Đang trích xuất văn bản',
-        writing:'AI đang điền nội dung', reviewing:'Chờ human review',
-        approved:'Đã duyệt — đang xuất', exporting:'Đang xuất file',
-        done:'✅ Hoàn thành', error:'❌ Lỗi xảy ra',
-      };
-      monitorData.timeline.push({
-        time: now, status: run.status,
-        label: stepLabels[run.status] || run.status,
-        step: run.current_step,
-      });
-    }
-
-    // State snapshot
-    monitorData.stateSnap = {
-      run_id:       runId,
-      status:       run.status,
-      current_step: run.current_step,
-      template_id:  run.template_id,
-      updated_at:   run.updated_at,
-      error:        run.error_message || null,
-    };
-    monitorData.status = run.status;
-
-    renderMonTab();
-
-    if (['done','error'].includes(run.status)) stopMonitorPolling();
-  } catch {}
-}
-
-function renderMonTab() {
-  if (monTab === 'graph')    renderMonGraph();
-  if (monTab === 'timeline') renderMonTimeline();
-  if (monTab === 'state')    renderMonState();
-}
-
-function renderMonGraph() {
-  const el = document.getElementById('mon-graph');
-  if (!el) return;
-  const status    = monitorData.status;
-  const activeNode = STATUS_NODE_MAP[status] || null;
-  const doneNodes  = DONE_NODES_MAP[status]  || [];
-
-  let html = `<div class="lg-graph" style="padding:10px 0">`;
-  html += `<div class="lg-start">START</div>`;
-
-  GRAPH_NODES.forEach((node, i) => {
-    const isDone   = doneNodes.includes(node.id);
-    const isActive = node.id === activeNode;
-    const isWait   = node.interrupt && isActive && status?.startsWith('awaiting');
-    const isErr    = status === 'error' && isActive;
-
-    const cls = isErr ? 'error' : isWait ? 'interrupt' : isActive ? 'active' : isDone ? 'done' : '';
-    const badge = isErr ? '<span class="node-badge nb-err">ERROR</span>'
-      : isWait    ? '<span class="node-badge nb-wait">⏸ WAIT</span>'
-      : isActive  ? '<span class="node-badge nb-active">● RUN</span>'
-      : isDone    ? '<span class="node-badge nb-done">✓</span>'
-      :             '<span class="node-badge nb-idle">idle</span>';
-
-    // Edge before node
-    const edgeCls = isDone || isActive ? 'done-edge' : '';
-    if (i > 0) html += `<div class="lg-edge ${edgeCls}"></div>`;
-
-    // Interrupt label before node
-    if (node.interrupt && !isDone && !isActive) {
-      html += `<div class="lg-interrupt-badge">⏸ INTERRUPT POINT</div>`;
-      html += `<div class="lg-edge"></div>`;
-    } else if (node.interrupt && (isWait)) {
-      html += `<div class="lg-interrupt-badge" style="border-color:var(--gold);animation:pulse-badge 1.5s infinite">⏸ ĐANG CHỜ XÁC NHẬN</div>`;
-      html += `<div class="lg-edge active-edge"></div>`;
-    }
-
-    html += `<div class="lg-node ${cls}">
-      <span class="node-icon">${node.icon}</span>
-      <span class="node-label">${node.label}</span>
-      ${badge}
-    </div>`;
-  });
-
-  const endDone = status === 'done';
-  html += `<div class="lg-edge ${endDone ? 'done-edge' : ''}"></div>`;
-  html += `<div class="lg-end" style="${endDone ? 'border-color:var(--green);color:var(--green);background:rgba(6,214,160,.15)' : ''}">END</div>`;
-  html += `</div>`;
-
-  el.innerHTML = html;
-}
-
-function renderMonTimeline() {
-  const el = document.getElementById('mon-timeline');
-  if (!el) return;
-  if (!monitorData.timeline.length) {
-    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:10px">Chưa có sự kiện nào.</div>';
-    return;
-  }
-  el.innerHTML = '<div class="tl-list">' +
-    monitorData.timeline.map((item, i) => {
-      const isLast = i === monitorData.timeline.length - 1;
-      const cls = item.status === 'done' ? 'tl-done'
-        : item.status === 'error' ? 'tl-err'
-        : item.status?.startsWith('awaiting') ? 'tl-wait'
-        : isLast ? 'tl-active' : 'tl-done';
-      return `<div class="tl-item ${cls}">
-        <div class="tl-time">${item.time}</div>
-        <div class="tl-content">
-          <div class="tl-label">${item.label}</div>
-          <div class="tl-desc">Step ${item.step} · status: <code>${item.status}</code></div>
-        </div>
-      </div>`;
-    }).join('') + '</div>';
-  // Scroll to bottom
-  el.scrollTop = el.scrollHeight;
-}
-
-function renderMonState() {
-  const el = document.getElementById('mon-state');
-  if (!el) return;
-  const snap = monitorData.stateSnap;
-  if (!Object.keys(snap).length) {
-    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:10px">Chưa có dữ liệu state.</div>';
-    return;
-  }
-  el.innerHTML = '<div class="state-kv">' +
-    Object.entries(snap).filter(([,v]) => v !== null && v !== undefined).map(([k, v]) => `
-      <div class="state-row">
-        <span class="state-key">${k}</span>
-        <span class="state-val">${typeof v === 'object' ? JSON.stringify(v) : v}</span>
-      </div>`
-    ).join('') + '</div>';
-}
-
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// SIDEBAR TABS
+// INIT & SIDEBAR
 // ═══════════════════════════════════════════════════════════
 function switchSidebarTab(tab) {
   ['tmpl','src','runs'].forEach(t => {
@@ -625,9 +349,6 @@ function switchSidebarTab(tab) {
   if (tab === 'runs') loadRuns();
 }
 
-// ═══════════════════════════════════════════════════════════
-// SOURCE DOCS MANAGEMENT (Sidebar panel)
-// ═══════════════════════════════════════════════════════════
 let allSourceDocs = [];
 
 async function loadSourceDocs() {
@@ -645,13 +366,74 @@ function renderSrcList() {
     el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">Chưa có tài liệu nào trong DB.</div>';
     return;
   }
-  el.innerHTML = allSourceDocs.map(d => `
-    <div class="src-card">
-      <button class="src-del" onclick="deleteSourceDoc('${d.id}','${d.filename.replace(/'/g,"\'")}')" title="Xóa">🗑</button>
-      <div class="src-name" title="${d.filename}">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
-      <div class="src-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
-      ${d.used_in_templates?.length ? `<div class="src-meta" style="margin-top:2px">Dùng cho: ${d.used_in_templates.join(', ')}</div>` : ''}
-    </div>`).join('');
+
+  // Nhóm theo folder
+  const groups = {};
+  allSourceDocs.forEach(d => {
+    const f = d.folder || 'Chưa phân loại';
+    if (!groups[f]) groups[f] = [];
+    groups[f].push(d);
+  });
+
+  el.innerHTML = Object.entries(groups).map(([folder, docs], idx) => {
+    const fid = 'folder-' + idx;
+    return `
+    <div class="src-folder-group">
+      <!-- Folder header -->
+      <div class="src-folder-header" onclick="toggleFolder('${fid}')">
+        <span class="src-folder-icon">📁</span>
+        <span class="src-folder-name">${folder}</span>
+        <span class="src-folder-count">${docs.length}</span>
+        <span class="src-folder-chevron" id="chev-${fid}">▾</span>
+      </div>
+      <!-- Folder body -->
+      <div class="src-folder-body" id="${fid}">
+        ${docs.map(d => `
+          <div class="src-card" style="margin-left:8px">
+            <div style="position:absolute;top:6px;right:6px;display:flex;gap:3px">
+              <button class="src-action-btn" title="Chuyển folder"
+                onclick="moveSrcDoc('${d.id}','${d.filename.replace(/'/g,"\\'")}','${folder.replace(/'/g,"\\'")}')">📂</button>
+              <button class="src-del"
+                onclick="deleteSourceDoc('${d.id}','${d.filename.replace(/'/g,"\\'")}')">🗑</button>
+            </div>
+            <div class="src-name" title="${d.filename}">
+              ${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}
+            </div>
+            <div class="src-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
+            ${d.used_in_templates?.length
+              ? `<div class="src-meta" style="margin-top:2px;color:var(--accent)">📋 ${d.used_in_templates.join(', ')}</div>`
+              : ''}
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleFolder(fid) {
+  const body = document.getElementById(fid);
+  const chev = document.getElementById('chev-' + fid);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'flex';
+  if (chev) chev.textContent = isOpen ? '▸' : '▾';
+}
+
+async function moveSrcDoc(id, filename, currentFolder) {
+  const folders = [...new Set(allSourceDocs.map(d => d.folder || 'Chưa phân loại'))];
+  const newFolder = prompt(
+    `Chuyển "${filename}" sang folder:\n(Có sẵn: ${folders.join(', ')})`,
+    currentFolder
+  );
+  if (!newFolder || newFolder.trim() === currentFolder) return;
+  try {
+    const r = await fetch(`${API}/sources/${id}/folder`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ folder: newFolder.trim() })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    toast(`✅ Đã chuyển sang folder "${newFolder.trim()}"`, 'success');
+    await loadSourceDocs();
+  } catch(e) { toast('Lỗi: '+e.message, 'error'); }
 }
 
 async function deleteSourceDoc(id, name) {
@@ -664,73 +446,122 @@ async function deleteSourceDoc(id, name) {
   } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
 }
 
-async function showUploadSource() {
-  // Upload trực tiếp vào DB nguồn (không attach vào run)
-  const input = document.createElement('input');
-  input.type = 'file'; input.multiple = true; input.accept = '.pdf,.docx,.doc,.txt';
-  input.onchange = async () => {
-    if (!input.files.length) return;
-    const form = new FormData();
-    [...input.files].forEach(f => form.append('files', f));
-    try {
-      const r = await fetch(`${API}/sources/upload`, { method:'POST', body:form });
-      if (!r.ok) throw new Error(await r.text());
-      const docs = await r.json();
-      toast(`✅ Đã upload ${docs.length} tài liệu`, 'success');
-      await loadSourceDocs();
-    } catch(e) { toast('Upload lỗi: '+e.message, 'error'); }
-  };
-  input.click();
+function showUploadSource() {
+  // Lấy danh sách folder hiện có
+  const existingFolders = [...new Set(allSourceDocs.map(d => d.folder || 'Chưa phân loại'))];
+
+  // Hiện modal upload có input folder
+  const overlay = document.createElement('div');
+  overlay.id = 'uploadSrcModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
+      padding:24px;min-width:360px;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+      <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--text)">📂 Upload Tài liệu Nguồn</div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">Folder lưu trữ</div>
+        <input id="uploadSrcFolder" type="text" list="folderDatalist"
+          placeholder="Nhập tên folder hoặc chọn có sẵn..."
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);
+          color:var(--text);font-size:12px;padding:8px 11px;outline:none">
+        <datalist id="folderDatalist">
+          ${existingFolders.map(f=>`<option value="${f}">`).join('')}
+        </datalist>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+          ${existingFolders.map(f=>`
+            <button onclick="document.getElementById('uploadSrcFolder').value='${f.replace(/'/g,"\'")}'"
+              style="font-size:9px;padding:2px 8px;background:rgba(0,120,212,.1);border:1px solid rgba(0,120,212,.2);
+              color:var(--accent);border-radius:8px;cursor:pointer">📁 ${f}</button>`).join('')}
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">Chọn file</div>
+        <div style="border:2px dashed var(--border2);border-radius:var(--rs);padding:16px;text-align:center;cursor:pointer"
+          onclick="document.getElementById('uploadSrcFileInput').click()">
+          <div style="font-size:20px;margin-bottom:4px">📁</div>
+          <div style="font-size:11px;color:var(--text2)">Click để chọn file</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">PDF · DOCX · TXT</div>
+        </div>
+        <input type="file" id="uploadSrcFileInput" multiple accept=".pdf,.docx,.doc,.txt" style="display:none"
+          onchange="updateUploadSrcPreview(this)">
+        <div id="uploadSrcFileList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('uploadSrcModal').remove()">Hủy</button>
+        <button class="btn btn-primary" onclick="doUploadSource()">📤 Upload</button>
+      </div>
+      <div id="uploadSrcResult" style="margin-top:8px"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
-// ═══════════════════════════════════════════════════════════
-// STEP 2: Load checkbox list từ DB, nhóm theo template
-// ═══════════════════════════════════════════════════════════
+function updateUploadSrcPreview(input) {
+  const el = document.getElementById('uploadSrcFileList');
+  el.innerHTML = [...input.files].map(f =>
+    `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--bg2);border-radius:4px;font-size:11px">
+      <span>${f.name.endsWith('.pdf')?'📄':'📝'}</span>
+      <span style="flex:1;color:var(--text2)">${f.name}</span>
+      <span style="color:var(--text3);font-family:monospace">${(f.size/1024).toFixed(1)} KB</span>
+    </div>`).join('');
+}
+
+async function doUploadSource() {
+  const folderInput = document.getElementById('uploadSrcFolder');
+  const fileInput   = document.getElementById('uploadSrcFileInput');
+  const resEl       = document.getElementById('uploadSrcResult');
+  const folder      = (folderInput?.value || '').trim() || 'Chưa phân loại';
+
+  if (!fileInput?.files.length) { toast('Chọn ít nhất 1 file', 'error'); return; }
+
+  resEl.innerHTML = '<div style="color:var(--text3);font-size:11px"><div class="spin"></div> Đang upload...</div>';
+  const form = new FormData();
+  [...fileInput.files].forEach(f => form.append('files', f));
+  form.append('folder', folder);
+
+  try {
+    const r = await fetch(`${API}/sources/upload`, { method:'POST', body:form });
+    if (!r.ok) throw new Error(await r.text());
+    const docs = await r.json();
+    resEl.innerHTML = `<div style="color:var(--green);font-size:11px">✅ Đã upload ${docs.length} tài liệu vào folder "${folder}"</div>`;
+    toast(`✅ Upload thành công vào "${folder}"`, 'success');
+    await loadSourceDocs();
+    setTimeout(() => document.getElementById('uploadSrcModal')?.remove(), 1500);
+  } catch(e) {
+    resEl.innerHTML = `<div style="color:var(--red);font-size:11px">✗ ${e.message}</div>`;
+  }
+}
+
 async function loadSrcDbList() {
   const el = document.getElementById('srcDbList');
+  if (!el) return;
   try {
     const r = await fetch(`${API}/sources`);
     if (!r.ok) { el.innerHTML = '<div style="color:var(--text3);font-size:11px">Không tải được danh sách.</div>'; return; }
     const docs = await r.json();
     allSourceDocs = docs;
-
-    if (!docs.length) {
-      el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">DB chưa có tài liệu. Upload mới bên dưới.</div>';
-      return;
-    }
-
-    // Nhóm theo template
+    if (!docs.length) { el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">DB chưa có tài liệu. Upload mới bên dưới.</div>'; return; }
     const groups = {};
     docs.forEach(d => {
       const grp = d.used_in_templates?.length ? d.used_in_templates[0] : '— Chưa phân nhóm —';
       if (!groups[grp]) groups[grp] = [];
       groups[grp].push(d);
     });
-
     el.innerHTML = Object.entries(groups).map(([grp, items]) => `
       <div class="src-group-label">${grp}</div>
-      ${items.map(d => `
-        <label class="src-check-item" id="lbl-${d.id}">
-          <input type="checkbox" value="${d.id}" onchange="onSrcCheck(this,'lbl-${d.id}')">
-          <div>
-            <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
-            <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
-          </div>
-        </label>`).join('')}
-    `).join('');
-  } catch(e) {
-    el.innerHTML = `<div style="color:var(--text3);font-size:11px">Lỗi: ${e.message}</div>`;
-  }
+      ${items.map(d => `<label class="src-check-item" id="lbl-${d.id}">
+        <input type="checkbox" value="${d.id}" onchange="onSrcCheck(this,'lbl-${d.id}')">
+        <div><div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
+        <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div></div>
+      </label>`).join('')}`).join('');
+  } catch(e) { el.innerHTML = `<div style="color:var(--text3);font-size:11px">Lỗi: ${e.message}</div>`; }
 }
 
-function onSrcCheck(cb, lblId) {
-  document.getElementById(lblId)?.classList.toggle('selected', cb.checked);
-}
-
-function getCheckedSrcIds() {
-  return [...document.querySelectorAll('#srcDbList input[type=checkbox]:checked')].map(cb => cb.value);
-}
-
+function onSrcCheck(cb, lblId) { document.getElementById(lblId)?.classList.toggle('selected', cb.checked); }
+function getCheckedSrcIds() { return [...document.querySelectorAll('#srcDbList input[type=checkbox]:checked')].map(cb => cb.value); }
 function toggleUploadNew() {
   const panel = document.getElementById('uploadNewPanel');
   const btn   = document.getElementById('btnToggleNew');
@@ -775,55 +606,39 @@ async function loadRuns() {
 function renderTmplList() {
   const el = document.getElementById('tmplList');
   if (!templates.length) {
-    el.innerHTML = `<div style="color:var(--text3);font-size:11px;padding:8px">
-      Chưa có template. Upload template .docx đầu tiên.
-    </div>
-    <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center"
-      onclick="showUploadTemplate()">+ Upload Template</button>`;
+    el.innerHTML = `<div style="color:var(--text3);font-size:11px;padding:8px">Chưa có template. Upload template .docx đầu tiên.</div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center" onclick="showUploadTemplate()">+ Upload Template</button>`;
     return;
   }
   el.innerHTML = templates.map((t,i) => `
     <div class="tmpl-card ${selTmplId===t.id?'active':''}" onclick="selectTemplate('${t.id}')">
-      <button class="tmpl-del" onclick="event.stopPropagation();deleteTemplate('${t.id}','${t.name}')" title="Xóa template">🗑</button>
+      <button class="tmpl-del" onclick="event.stopPropagation();deleteTemplate('${t.id}','${t.name}')">🗑</button>
       <div class="tn">DOC ${i+1}</div>
       <div class="tm">${t.name}</div>
       <div class="td">${t.description||''}</div>
       <div class="tf">🟡 ${t.fields.length} trường</div>
     </div>`).join('')
-    + `<button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;font-size:11px"
-        onclick="showUploadTemplate()">+ Upload Template</button>`;
+    + `<button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;font-size:11px" onclick="showUploadTemplate()">+ Upload Template</button>`;
 }
 
 function renderRunList(runs) {
   const el = document.getElementById('runList');
-  if (!runs.length) {
-    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">Chưa có run nào</div>';
-    return;
-  }
+  if (!runs.length) { el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">Chưa có run nào</div>'; return; }
   el.innerHTML = runs.slice(0,8).map(r => {
     const cls = r.status==='done'?'rs-done':r.status==='reviewing'?'rs-reviewing':r.status==='error'?'rs-error':'rs-other';
     return `<div class="run-item" style="position:relative" onclick="loadRun('${r.id}')">
-      <div style="flex:1">
-        <div class="run-id">${r.id.substring(0,8)}…</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:1px">${r.updated_at.substring(0,16)}</div>
-      </div>
+      <div style="flex:1"><div class="run-id">${r.id.substring(0,8)}…</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${r.updated_at.substring(0,16)}</div></div>
       <span class="run-status ${cls}">${r.status}</span>
-      <button onclick="event.stopPropagation();deleteRun('${r.id}')"
-        style="margin-left:6px;background:none;border:none;color:var(--text3);cursor:pointer;
-        font-size:11px;padding:2px 5px;border-radius:3px;opacity:0.5;transition:all .15s"
-        onmouseover="this.style.opacity='1';this.style.color='var(--red)'"
-        onmouseout="this.style.opacity='0.5';this.style.color='var(--text3)'">✕</button>
+      <button onclick="event.stopPropagation();deleteRun('${r.id}')" style="margin-left:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:2px 5px;border-radius:3px;opacity:0.5;transition:all .15s" onmouseover="this.style.opacity='1';this.style.color='var(--red)'" onmouseout="this.style.opacity='0.5';this.style.color='var(--text3)'">✕</button>
     </div>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════
-// SELECT TEMPLATE → show pipeline UI
-// ═══════════════════════════════════════════════════════════
 function selectTemplate(id) {
   selTmplId = id;
   currentRun = null;
   uploadedSrcIds = [];
+  uploadedDocs = [];
   pendingFiles = [];
   clearPoll();
   renderTmplList();
@@ -832,71 +647,41 @@ function selectTemplate(id) {
 
 function renderPipelineUI() {
   const t = templates.find(x => x.id === selTmplId);
-  // Load danh sách tài liệu DB cho step 2
   setTimeout(loadSrcDbList, 100);
   document.getElementById('mainContent').innerHTML = `
     <div class="pipeline">
-
-      <!-- Step 1: Analyze -->
       <div class="step done" id="s1">
         <div class="step-hdr">
           <div class="step-num">1</div>
-          <div class="step-info">
-            <div class="step-name">🔍 Template đã phân tích</div>
-            <div class="step-desc">${t.name} · ${t.fields.length} trường tô vàng</div>
-          </div>
+          <div class="step-info"><div class="step-name">🔍 Template đã phân tích</div><div class="step-desc">${t.name} · ${t.fields.length} trường tô vàng</div></div>
           <span class="sbadge sb-done">✓ Done</span>
         </div>
         <div class="step-body">
           <div style="display:flex;flex-wrap:wrap;gap:5px">
-            ${t.fields.slice(0,8).map((f,i)=>`<span style="background:var(--bg);border:1px solid var(--border2);
-              border-radius:4px;padding:2px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3)">
-              #${i+1}: ${f.placeholder.substring(0,35)}${f.placeholder.length>35?'…':''}</span>`).join('')}
+            ${t.fields.slice(0,8).map((f,i)=>`<span style="background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3)">#${i+1}: ${f.placeholder.substring(0,35)}${f.placeholder.length>35?'…':''}</span>`).join('')}
             ${t.fields.length>8?`<span style="color:var(--text3);font-size:10px">+${t.fields.length-8} nữa</span>`:''}
           </div>
         </div>
       </div>
 
-      <!-- Step 2: Upload sources -->
       <div class="step active" id="s2">
         <div class="step-hdr">
           <div class="step-num">2</div>
-          <div class="step-info">
-            <div class="step-name">📂 Upload Tài liệu Nguồn</div>
-            <div class="step-desc">Upload báo cáo cũ, file số liệu (Word/PDF) làm dữ liệu đầu vào</div>
-          </div>
+          <div class="step-info"><div class="step-name">📂 Upload Tài liệu Nguồn</div><div class="step-desc">Upload báo cáo cũ, file số liệu (Word/PDF) làm dữ liệu đầu vào</div></div>
           <span class="sbadge sb-run" id="b2">Chờ upload</span>
         </div>
         <div class="step-body">
-
-          <!-- Phase A: Chọn tài liệu từ DB hoặc upload mới -->
           <div id="phaseUpload">
-            <!-- A1: Chọn từ DB -->
-            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;
-              display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
               <div style="display:flex;align-items:center;gap:6px">
-                <span style="background:var(--accent);color:#fff;width:18px;height:18px;border-radius:50%;
-                  display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">A</span>
+                <span style="background:var(--accent);color:#fff;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">A</span>
                 Chọn tài liệu nguồn
               </div>
-              <button onclick="toggleUploadNew()" id="btnToggleNew"
-                style="font-size:10px;background:none;border:1px solid var(--border2);
-                color:var(--text3);border-radius:4px;padding:3px 8px;cursor:pointer">
-                + Upload mới
-              </button>
+              <button onclick="toggleUploadNew()" id="btnToggleNew" style="font-size:10px;background:none;border:1px solid var(--border2);color:var(--text3);border-radius:4px;padding:3px 8px;cursor:pointer">+ Upload mới</button>
             </div>
-
-            <!-- Danh sách từ DB (checkbox, nhóm theo template) -->
-            <div id="srcDbList" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
-              <div style="color:var(--text3);font-size:11px">Đang tải tài liệu...</div>
-            </div>
-
-            <!-- A2: Upload file mới (ẩn mặc định) -->
+            <div id="srcDbList" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"><div style="color:var(--text3);font-size:11px">Đang tải tài liệu...</div></div>
             <div id="uploadNewPanel" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2)">
-              <div class="upload-zone" id="uploadZone"
-                   onclick="document.getElementById('srcInput').click()"
-                   ondragover="event.preventDefault();this.classList.add('drag')"
-                   ondrop="onDrop(event)" ondragleave="this.classList.remove('drag')">
+              <div class="upload-zone" id="uploadZone" onclick="document.getElementById('srcInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="onDrop(event)" ondragleave="this.classList.remove('drag')">
                 <input type="file" id="srcInput" multiple accept=".pdf,.docx,.doc,.txt" onchange="onFilePick(event)">
                 <div style="font-size:22px;margin-bottom:4px">📁</div>
                 <div style="font-size:11px;font-weight:600;color:var(--text2)">Kéo thả hoặc click để upload</div>
@@ -904,133 +689,85 @@ function renderPipelineUI() {
               </div>
               <div class="file-chips" id="fileChips"></div>
             </div>
-
             <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="doUploadFiles()" id="btnUpload">
-                ▶ Tiếp tục
-              </button>
-              <button class="btn btn-ghost" onclick="skipSources()" style="font-size:11px">
-                Bỏ qua (AI tự generate)
-              </button>
+              <button class="btn btn-primary" onclick="doUploadFiles()" id="btnUpload">▶ Tiếp tục</button>
+              <button class="btn btn-ghost" onclick="skipSources()" style="font-size:11px">Bỏ qua (AI tự generate)</button>
             </div>
             <div id="uploadLog" style="margin-top:8px"></div>
           </div>
-
-          <!-- Phase B: Xác nhận trích xuất (hiện sau khi upload xong VÀ graph đang chờ) -->
           <div id="phaseExtract" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2)">
-            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;
-              display:flex;align-items:center;gap:6px">
-              <span style="background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;
-                display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">B</span>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+              <span style="background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">B</span>
               Trích xuất nội dung văn bản
             </div>
             <div id="uploadedFileList" style="margin-bottom:10px"></div>
-            <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);
-              padding:10px 14px;font-size:11px;color:var(--text3);margin-bottom:10px">
+            <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 14px;font-size:11px;color:var(--text3);margin-bottom:10px">
               ⏸ Pipeline đang chờ xác nhận — nhấn nút bên dưới để bắt đầu trích xuất văn bản từ các file đã upload.
             </div>
             <div style="display:flex;gap:8px;align-items:center">
-              <button class="btn btn-ai" onclick="confirmExtract()" id="btnExtract">
-                ✨ Xác nhận Trích xuất
-              </button>
+              <button class="btn btn-ai" onclick="confirmExtract()" id="btnExtract">✨ Xác nhận Trích xuất</button>
             </div>
             <div id="srcLog" style="margin-top:8px"></div>
           </div>
-
         </div>
       </div>
 
-      <!-- Step 3: Write -->
       <div class="step" id="s3">
         <div class="step-hdr">
           <div class="step-num">3</div>
-          <div class="step-info">
-            <div class="step-name">✍️ AI Viết nội dung</div>
-            <div class="step-desc">LangGraph pipeline: Claude đọc nguồn → điền từng trường → đánh giá confidence</div>
-          </div>
+          <div class="step-info"><div class="step-name">✍️ AI Viết nội dung</div><div class="step-desc">LangGraph pipeline: AI đọc nguồn → điền từng trường → đánh giá confidence</div></div>
           <span class="sbadge sb-idle" id="b3">Chờ</span>
         </div>
         <div class="step-body">
-          <button class="btn btn-ai" onclick="startPipeline()" id="btnStart">
-            🚀 Chạy Pipeline
-          </button>
-          <div id="s3Progress" style="display:none">
-            <div class="pbar"><div class="pbar-fill" id="s3Pbar" style="width:0%"></div></div>
-            <div class="log" id="s3Log"></div>
-          </div>
+          <div class="pbar"><div class="pbar-fill" id="s3Pbar" style="width:0%"></div></div>
+          <div class="log" id="s3Log"></div>
         </div>
       </div>
 
-      <!-- Step 4: Review -->
       <div class="step" id="s4">
         <div class="step-hdr">
           <div class="step-num">4</div>
-          <div class="step-info">
-            <div class="step-name">👁️ Review & Phê duyệt</div>
-            <div class="step-desc">🟢 AI tự tin cao · 🔴 Cần kiểm tra · Chỉnh sửa rồi approve</div>
-          </div>
+          <div class="step-info"><div class="step-name">👁️ Review & Phê duyệt</div><div class="step-desc">🟢 AI tự tin cao · 🔴 Cần kiểm tra · Chỉnh sửa rồi approve</div></div>
           <span class="sbadge sb-idle" id="b4">Chờ</span>
         </div>
-        <div class="step-body" id="s4Body">
-          <div style="color:var(--text3);font-size:12px">Chờ bước 3 hoàn thành.</div>
-        </div>
+        <div class="step-body" id="s4Body"><div style="color:var(--text3);font-size:12px">Chờ bước 3 hoàn thành.</div></div>
       </div>
 
-      <!-- Step 5: Export -->
       <div class="step" id="s5">
         <div class="step-hdr">
           <div class="step-num">5</div>
-          <div class="step-info">
-            <div class="step-name">📥 Xuất File DOCX</div>
-            <div class="step-desc">Tải xuống file đã điền hoàn chỉnh từ server</div>
-          </div>
+          <div class="step-info"><div class="step-name">📥 Xuất File DOCX</div><div class="step-desc">Tải xuống file đã điền hoàn chỉnh từ server</div></div>
           <span class="sbadge sb-idle" id="b5">Chờ</span>
         </div>
-        <div class="step-body" id="s5Body">
-          <div style="color:var(--text3);font-size:12px">Chờ review xong.</div>
-        </div>
+        <div class="step-body" id="s5Body"><div style="color:var(--text3);font-size:12px">Chờ review xong.</div></div>
       </div>
 
     </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 2: file handling
+// STEP 2
 // ═══════════════════════════════════════════════════════════
-function onDrop(e) {
-  e.preventDefault();
-  document.getElementById('uploadZone').classList.remove('drag');
-  addFiles([...e.dataTransfer.files]);
-}
+function onDrop(e) { e.preventDefault(); document.getElementById('uploadZone').classList.remove('drag'); addFiles([...e.dataTransfer.files]); }
 function onFilePick(e) { addFiles([...e.target.files]); e.target.value=''; }
 function addFiles(files) {
   files.forEach(f => { if (!pendingFiles.find(p=>p.name===f.name)) pendingFiles.push(f); });
   document.getElementById('fileChips').innerHTML = pendingFiles.map(f =>
-    `<div class="chip">${f.name.endsWith('.pdf')?'📄':'📝'} ${f.name}
-     <span class="rm" onclick="rmFile('${f.name}')">×</span></div>`).join('');
+    `<div class="chip">${f.name.endsWith('.pdf')?'📄':'📝'} ${f.name}<span class="rm" onclick="rmFile('${f.name}')">×</span></div>`).join('');
   document.getElementById('btnUpload').disabled = pendingFiles.length === 0;
 }
 function rmFile(name) { pendingFiles = pendingFiles.filter(f=>f.name!==name); addFiles([]); }
 
-// Phase A: start pipeline → upload/chọn file → confirm_upload
 async function doUploadFiles() {
   const btn = document.getElementById('btnUpload');
   btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang khởi động...';
   setStep(2,'active','Đang khởi động pipeline...');
-
   try {
-    // 1. Start pipeline để có run_id
     if (!currentRun) {
-      const rs = await fetch(`${API}/pipeline/start`, {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ template_id: selTmplId, source_doc_ids: [] })
-      });
+      const rs = await fetch(`${API}/pipeline/start`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ template_id: selTmplId, source_doc_ids: [] }) });
       if (!rs.ok) throw new Error(await rs.text());
       currentRun = (await rs.json()).run_id;
-      showMonitor(currentRun);
     }
-
-    // 2. Upload file mới (nếu có)
     btn.innerHTML = '<div class="spin"></div> Đang upload...';
     const checkedIds = getCheckedSrcIds();
     let newDocs = [];
@@ -1041,77 +778,72 @@ async function doUploadFiles() {
       if (!r.ok) throw new Error(await r.text());
       newDocs = await r.json();
     }
-
-    // 3. Tổng hợp IDs
     uploadedSrcIds = [...checkedIds, ...newDocs.map(d => d.id)];
     uploadedDocs   = [...allSourceDocs.filter(d => checkedIds.includes(d.id)), ...newDocs];
-
-    if (!uploadedSrcIds.length) {
-      skipSources(); btn.disabled=false; btn.innerHTML='▶ Tiếp tục'; return;
-    }
-
-    // 4. Gắn docs vào run (1 lần duy nhất)
+    if (!uploadedSrcIds.length) { skipSources(); btn.disabled=false; btn.innerHTML='▶ Tiếp tục'; return; }
     btn.innerHTML = '<div class="spin"></div> Đang xử lý...';
-    await fetch(`${API}/pipeline/${currentRun}/attach_sources`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ source_doc_ids: uploadedSrcIds })
-    });
-
-    // 5. Hiển thị danh sách đã chọn
-    document.getElementById('uploadLog').innerHTML =
-      `<div style="color:var(--green);font-size:11px">\u2705 Đã chọn ${uploadedDocs.length} tài liệu</div>`;
-    document.getElementById('uploadedFileList').innerHTML =
-      uploadedDocs.map(d => `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;
-        background:var(--bg2);border-radius:5px;margin-bottom:4px;font-size:11px">
+    await fetch(`${API}/pipeline/${currentRun}/attach_sources`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ source_doc_ids: uploadedSrcIds }) });
+    document.getElementById('uploadLog').innerHTML = `<div style="color:var(--green);font-size:11px">✅ Đã chọn ${uploadedDocs.length} tài liệu</div>`;
+    document.getElementById('uploadedFileList').innerHTML = uploadedDocs.map(d =>
+      `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--bg2);border-radius:5px;margin-bottom:4px;font-size:11px">
         <span>${(d.filename||'').endsWith('.pdf')?'📄':'📝'}</span>
         <span style="flex:1;color:var(--text2)">${d.filename}</span>
         <span style="color:var(--text3);font-family:monospace">${((d.file_size||0)/1024).toFixed(1)} KB</span>
       </div>`).join('');
-
-    // 6. Poll đến khi graph dừng tại interrupt extract_sources
     setStep(2,'active','Đang phân tích...');
     await pollUntilStatus(['awaiting_extract', 'reviewing', 'error'], () => {
-      // Ẩn Phase A để không thể click lại
       document.getElementById('phaseUpload').style.display = 'none';
       document.getElementById('phaseExtract').style.display = 'block';
-      setStep(2,'active','\u23f8 Chờ xác nhận trích xuất');
+      setStep(2,'active','⏸ Chờ xác nhận trích xuất');
     });
-    return; // không re-enable button
-
+    return;
   } catch(e) {
     setStep(2,'err','Lỗi');
-    document.getElementById('uploadLog').innerHTML =
-      `<div style="color:var(--red);font-size:11px">✗ ${e.message}</div>`;
+    document.getElementById('uploadLog').innerHTML = `<div style="color:var(--red);font-size:11px">✗ ${e.message}</div>`;
     toast('Upload lỗi: '+e.message,'error');
   }
   btn.disabled=false; btn.innerHTML='▶ Tiếp tục';
 }
 
-// Phase B: resume graph qua interrupt extract_sources → chạy write_fields
 async function confirmExtract() {
   const btn = document.getElementById('btnExtract');
   btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang trích xuất...';
   setStep(2,'active','Đang trích xuất...');
-
   try {
     const r = await fetch(`${API}/pipeline/${currentRun}/confirm_extract`, { method:'POST' });
     if (!r.ok) throw new Error(await r.text());
-
-    // Poll đến khi status = reviewing (write_fields xong)
     const log = document.getElementById('srcLog');
     log.innerHTML = '<div class="log"><div class="info">⏳ AI đang đọc tài liệu và điền nội dung...</div></div>';
 
-    await pollUntilStatus(['reviewing', 'error'], async () => {
-      // Lấy preview kết quả extract
-      log.innerHTML = '<div class="log">' +
-        uploadedDocs.map(d=>`<div class="ok">✓ ${d.filename} — ${(d.text_len||0).toLocaleString()} ký tự</div>
-          ${d.preview?`<div class="src-preview">${d.preview}</div>`:''}`).join('') + '</div>';
+    // Hiện step 3 đang chạy với progress bar
+    setStep(3,'active','AI đang viết...');
+    const s3log = document.getElementById('s3Log');
+    if (s3log) addLog(s3log, '🤖 AI đang đọc tài liệu nguồn và điền nội dung...', 'info');
 
+    // Poll với progress bar động
+    const progressTimer = setInterval(async () => {
+      try {
+        const pr = await fetch(`${API}/pipeline/${currentRun}`);
+        const prun = await pr.json();
+        const pct = {extracting:20, writing:60}[prun.status] || 40;
+        const s3pbar = document.getElementById('s3Pbar');
+        if (s3pbar) s3pbar.style.width = pct + '%';
+        const b3 = document.getElementById('b3');
+        if (b3) b3.textContent = prun.status === 'writing' ? 'AI đang viết...' : 'Đang trích xuất...';
+      } catch {}
+    }, 1500);
+
+    await pollUntilStatus(['reviewing', 'error'], async () => {
+      clearInterval(progressTimer);
+      log.innerHTML = '<div class="log">' + uploadedDocs.map(d=>`<div class="ok">✓ ${d.filename} — ${(d.text_len||0).toLocaleString()} ký tự</div>`).join('') + '</div>';
       setStep(2,'done','✓ Xong');
       setStep(3,'done','✓ AI xong');
+      const s3pbar = document.getElementById('s3Pbar');
+      if (s3pbar) s3pbar.style.width = '100%';
+      const s3log2 = document.getElementById('s3Log');
+      if (s3log2) addLog(s3log2, '✅ AI đã điền xong tất cả các trường!', 'ok');
       await loadReview();
     });
-
   } catch(e) {
     setStep(2,'err','Lỗi');
     toast('Trích xuất lỗi: '+e.message,'error');
@@ -1119,20 +851,16 @@ async function confirmExtract() {
   btn.disabled=false; btn.innerHTML='✨ Xác nhận Trích xuất';
 }
 
-// Helper: poll cho đến khi run đạt status mong muốn
 async function pollUntilStatus(targetStatuses, onDone) {
   return new Promise((resolve) => {
     const timer = setInterval(async () => {
       try {
-        const r   = await fetch(`${API}/pipeline/${currentRun}`);
+        const r = await fetch(`${API}/pipeline/${currentRun}`);
         const run = await r.json();
         if (targetStatuses.includes(run.status)) {
           clearInterval(timer);
-          if (run.status === 'error') {
-            toast('Pipeline lỗi: '+(run.error_message||'Unknown'), 'error');
-          } else {
-            await onDone(run);
-          }
+          if (run.status === 'error') { toast('Pipeline lỗi: '+(run.error_message||'Unknown'), 'error'); }
+          else { await onDone(run); }
           resolve();
         }
       } catch {}
@@ -1142,97 +870,27 @@ async function pollUntilStatus(targetStatuses, onDone) {
 
 function skipSources() {
   uploadedSrcIds = [];
+  uploadedDocs   = [];
   setStep(2,'done','Bỏ qua');
-  enableStep3();
-}
-
-function enableStep3() {
-  const s3 = document.getElementById('s3');
-  s3.classList.add('active');
-  document.getElementById('b3').className = 'sbadge sb-run';
-  document.getElementById('b3').textContent = 'Sẵn sàng';
+  // Không có tài liệu → chạy thẳng extract (context rỗng)
+  confirmExtract();
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 3: start pipeline
+// STEP 3 — tự động chạy sau confirmExtract, không cần nút
 // ═══════════════════════════════════════════════════════════
-async function startPipeline() {
-  document.getElementById('btnStart').style.display = 'none';
-  document.getElementById('s3Progress').style.display = 'block';
-  setStep(3,'active','Đang chạy...');
-
-  const log = document.getElementById('s3Log');
-  addLog(log, '🚀 Gửi yêu cầu đến LangGraph pipeline...', 'info');
-
-  try {
-    const r   = await fetch(`${API}/pipeline/start`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ template_id: selTmplId, source_doc_ids: uploadedSrcIds })
-    });
-    const d = await r.json();
-    currentRun = d.run_id;
-    addLog(log, `✓ Run ID: ${currentRun.substring(0,8)}…`, 'ok');
-    addLog(log, '⏳ Pipeline đang chạy (steps 1→3)...', 'info');
-
-    // Poll for status
-    pollRunStatus(log);
-  } catch(e) {
-    setStep(3,'err','Lỗi');
-    addLog(log, '✗ Lỗi: '+e.message, 'err');
-  }
-}
-
-function pollRunStatus(log) {
-  let dots = 0;
-  pollTimer = setInterval(async () => {
-    if (!currentRun) return;
-    try {
-      const r = await fetch(`${API}/pipeline/${currentRun}`);
-      const run = await r.json();
-
-      if (run.status === 'reviewing') {
-        clearPoll();
-        setStep(3,'done','✓ Hoàn thành');
-        addLog(log, '✅ AI đã điền xong tất cả các trường!', 'ok');
-        document.getElementById('s3Pbar').style.width = '100%';
-        await loadReview();
-      } else if (run.status === 'error') {
-        clearPoll();
-        setStep(3,'err','Lỗi');
-        addLog(log, '✗ Pipeline lỗi: '+(run.error_message||'Unknown'), 'err');
-      } else {
-        dots = (dots+1)%4;
-        const stepMap = {
-          analyzing:'Step 1: Phân tích template…',
-          awaiting_upload:'⏸ Chờ upload tài liệu…',
-          uploading:'Step 2a: Đang upload…',
-          awaiting_extract:'⏸ Chờ xác nhận trích xuất…',
-          extracting:'Step 2b: Đang trích xuất…',
-          writing:'Step 3: AI đang viết…'
-        };
-        const msg = stepMap[run.status] || run.status;
-        document.getElementById('b3').textContent = msg;
-        const pct = {analyzing:10, awaiting_upload:20, uploading:30, awaiting_extract:40, extracting:55, writing:75}[run.status] || 50;
-        document.getElementById('s3Pbar').style.width = pct+'%';
-      }
-    } catch {}
-  }, 2000);
-}
-
 function clearPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer=null; } }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 4: review
+// STEP 4
 // ═══════════════════════════════════════════════════════════
 async function loadReview() {
   setStep(4,'waiting','Chờ duyệt');
-  const r       = await fetch(`${API}/pipeline/${currentRun}/results`);
+  const r = await fetch(`${API}/pipeline/${currentRun}/results`);
   const results = await r.json();
-
   const high = results.filter(x=>x.confidence==='high').length;
   const mid  = results.filter(x=>x.confidence==='mid').length;
   const low  = results.filter(x=>x.confidence==='low').length;
-
   document.getElementById('s4Body').innerHTML = `
     <div class="sum-bar">
       <div class="sum-stat"><div class="dot" style="background:var(--green)"></div>${high} tự tin cao</div>
@@ -1243,87 +901,87 @@ async function loadReview() {
       ${results.map((r,i) => {
         const cls = r.confidence==='high'?'h':r.confidence==='low'?'l':'m';
         const lbl = r.confidence==='high'?'🟢 Cao':r.confidence==='low'?'🔴 Thấp':'🟡 Trung bình';
-        return `<div class="rev-item ${cls}">
-          <div class="rev-top">
-            <span class="rev-idx">#${(i+1).toString().padStart(2,'0')}</span>
-            <div class="rev-ctx">${r.context.substring(0,100)}${r.context.length>100?'…':''}</div>
-            <span class="rev-conf">${lbl}</span>
-          </div>
-          <textarea class="rev-ta" id="rv-${r.field_key}"
-  oninput="autoResizeTa(this)"
-  >${r.final_value||r.ai_value||''}</textarea>
-          ${r.reason?`<div class="rev-reason">💬 ${r.reason}</div>`:''}
-        </div>`;
+        const aiVal   = r.final_value || r.ai_value || '';
+        const origVal = r.placeholder || '';
+        const ctx100  = r.context ? (r.context.substring(0,100)+(r.context.length>100?'…':'')) : '';
+
+        if (r.confidence === 'high') {
+          // HIGH: auto-replace, chỉ hiện kết quả AI (không cần chỉnh)
+          return `<div class="rev-item h" style="opacity:.92">
+            <div class="rev-top">
+              <span class="rev-idx">#${(i+1).toString().padStart(2,'0')}</span>
+              <div class="rev-ctx">${ctx100}</div>
+              <span class="rev-conf">🟢 Cao</span>
+              <span class="rev-auto-badge">✓ Tự động</span>
+            </div>
+            <div class="rev-high-val">${aiVal||'<em style="color:#9ca3af">—</em>'}</div>
+            <input type="hidden" id="rv-${r.field_key}" value="${aiVal.replace(/"/g,'&quot;')}">
+            ${r.reason?`<div class="rev-reason">💬 ${r.reason}</div>`:''}
+          </div>`;
+        } else {
+          // MID / LOW: hiện cả 2 cột — bản gốc (trái) + AI đề xuất (phải, có thể sửa)
+          return `<div class="rev-item ${cls}">
+            <div class="rev-top">
+              <span class="rev-idx">#${(i+1).toString().padStart(2,'0')}</span>
+              <div class="rev-ctx">${ctx100}</div>
+              <span class="rev-conf">${lbl}</span>
+            </div>
+            <div class="rev-dual">
+              <div>
+                <div class="rev-col-label rev-col-orig">📄 Nội dung gốc (placeholder)</div>
+                <div class="rev-orig-box">${origVal||'<em>—</em>'}</div>
+              </div>
+              <div>
+                <div class="rev-col-label rev-col-ai">🤖 AI đề xuất (có thể sửa)</div>
+                <textarea class="rev-ta" id="rv-${r.field_key}" oninput="autoResizeTa(this)">${aiVal}</textarea>
+              </div>
+            </div>
+            ${r.reason?`<div class="rev-reason">💬 ${r.reason}</div>`:''}
+          </div>`;
+        }
       }).join('')}
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <select id="exportMode" style="background:var(--bg);border:1px solid var(--border2);color:var(--text);
-        border-radius:var(--rs);padding:7px 10px;font-size:12px;outline:none">
+      <select id="exportMode" style="background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:var(--rs);padding:7px 10px;font-size:12px;outline:none">
         <option value="clean">Clean (bỏ highlight)</option>
         <option value="tracked">Tracked (giữ màu review)</option>
       </select>
       <button class="btn btn-green" id="btnSubmitReview" onclick="submitReview()">✅ Phê duyệt & Tiếp tục</button>
     </div>`;
-
-  // Auto-resize tất cả textarea sau khi render
-  setTimeout(() => {
-    document.querySelectorAll('.rev-ta').forEach(ta => autoResizeTa(ta));
-  }, 50);
+  setTimeout(() => { document.querySelectorAll('.rev-ta').forEach(ta => autoResizeTa(ta)); }, 50);
 }
 
 async function submitReview() {
   const btn = document.getElementById('btnSubmitReview');
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang xử lý...'; }
-
   const results = await (await fetch(`${API}/pipeline/${currentRun}/results`)).json();
-  const edits   = {};
+  const edits = {};
   results.forEach(r => {
-    const ta = document.getElementById(`rv-${r.field_key}`);
-    if (ta) edits[r.field_key] = ta.value;
+    const el = document.getElementById(`rv-${r.field_key}`);
+    if (el) edits[r.field_key] = el.value; // works for both <textarea> and <input type=hidden>
   });
   const mode = document.getElementById('exportMode').value;
-
-  const r = await fetch(`${API}/pipeline/${currentRun}/approve`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ edits, export_mode: mode })
-  });
-  if (!r.ok) { 
-    toast('Approve lỗi','error');
-    if (btn) { btn.disabled = false; btn.innerHTML = '✅ Phê duyệt & Tiếp tục'; }
-    return; 
-  }
-
-  // Lock toàn bộ textarea sau khi approve thành công
-  document.querySelectorAll('.rev-ta').forEach(ta => {
-    ta.disabled = true;
-    ta.classList.add('locked');
-  });
-  if (btn) { btn.disabled = true; btn.innerHTML = '✅ Đã phê duyệt'; btn.style.opacity = '.6'; }
-  if (document.getElementById('exportMode')) document.getElementById('exportMode').disabled = true;
-
+  const r = await fetch(`${API}/pipeline/${currentRun}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ edits, export_mode: mode }) });
+  if (!r.ok) { toast('Approve lỗi','error'); if (btn) { btn.disabled=false; btn.innerHTML='✅ Phê duyệt & Tiếp tục'; } return; }
+  document.querySelectorAll('.rev-ta').forEach(ta => { ta.disabled=true; ta.classList.add('locked'); });
+  document.querySelectorAll('.rev-high-val').forEach(d => { d.style.opacity='.7'; });
+  if (btn) { btn.disabled=true; btn.innerHTML='✅ Đã phê duyệt'; btn.style.opacity='.6'; }
+  if (document.getElementById('exportMode')) document.getElementById('exportMode').disabled=true;
   setStep(4,'done','✓ Đã duyệt');
   renderExport(mode);
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 5: export
+// STEP 5
 // ═══════════════════════════════════════════════════════════
 function renderExport(mode) {
   setStep(5,'active','Sẵn sàng');
   document.getElementById('s5Body').innerHTML = `
-    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">
-      Nhấn nút bên dưới để tải xuống file .docx đã điền hoàn chỉnh từ server.
-    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Nhấn nút bên dưới để tải xuống file .docx đã điền hoàn chỉnh từ server.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="downloadExport('${mode}')" id="btnDl">
-        📥 Tải xuống (${mode === 'clean' ? 'Clean' : 'Tracked'})
-      </button>
-      <button class="btn btn-ghost" onclick="openPreview()" style="font-size:11px">
-        👁️ Xem trước báo cáo
-      </button>
-      <button class="btn btn-ghost" onclick="downloadExport('${mode==='clean'?'tracked':'clean'}')" style="font-size:11px">
-        🎨 ${mode === 'clean' ? 'Tracked version' : 'Clean version'}
-      </button>
+      <button class="btn btn-primary" onclick="downloadExport('${mode}')" id="btnDl">📥 Tải xuống (${mode==='clean'?'Clean':'Tracked'})</button>
+      <button class="btn btn-ghost" onclick="openPreview()" style="font-size:11px">👁️ Xem trước báo cáo</button>
+      <button class="btn btn-ghost" onclick="downloadExport('${mode==='clean'?'tracked':'clean'}')" style="font-size:11px">🎨 ${mode==='clean'?'Tracked version':'Clean version'}</button>
     </div>
     <div id="dlResult" style="margin-top:8px"></div>`;
 }
@@ -1331,27 +989,25 @@ function renderExport(mode) {
 async function downloadExport(mode) {
   const btn = document.getElementById('btnDl');
   btn.disabled=true; btn.innerHTML='<div class="spin"></div> Đang tạo file...';
-
   try {
     const r = await fetch(`${API}/pipeline/${currentRun}/export?export_mode=${mode}`, { method:'POST' });
     if (!r.ok) throw new Error(await r.text());
-
     const blob = await r.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     const cd   = r.headers.get('Content-Disposition')||'';
-    const name = cd.match(/filename="(.+)"/)?.[1] || 'report.docx';
+    // Hỗ trợ cả filename*=UTF-8''... (RFC5987) lẫn filename="..."
+    const nameRfc    = cd.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    const nameSimple = cd.match(/filename="([^"]+)"/i)?.[1];
+    const name = nameRfc ? decodeURIComponent(nameRfc) : (nameSimple || 'report.docx');
     a.href=url; a.download=name; a.click();
     URL.revokeObjectURL(url);
-
     setStep(5,'done','✓ Done');
-    document.getElementById('dlResult').innerHTML =
-      `<div style="color:var(--green);font-size:12px">✅ Đã tải: <strong>${name}</strong></div>`;
+    document.getElementById('dlResult').innerHTML = `<div style="color:var(--green);font-size:12px">✅ Đã tải: <strong>${name}</strong></div>`;
     toast('✅ File đã tải xuống thành công!','success');
     await loadRuns();
   } catch(e) {
-    document.getElementById('dlResult').innerHTML =
-      `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
+    document.getElementById('dlResult').innerHTML = `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
     toast('Lỗi tải file: '+e.message,'error');
   }
   btn.disabled=false; btn.innerHTML='📥 Tải xuống';
@@ -1362,62 +1018,45 @@ async function downloadExport(mode) {
 // ═══════════════════════════════════════════════════════════
 async function loadRun(runId) {
   currentRun = runId;
-  const r   = await fetch(`${API}/pipeline/${runId}`);
+  const r = await fetch(`${API}/pipeline/${runId}`);
   const run = await r.json();
-
-  // Find template
   const t = templates.find(x => x.id === run.template_id);
   if (t) { selTmplId = t.id; renderTmplList(); renderPipelineUI(); }
-
-  // Restore UI to correct step
   if (['reviewing','approved','exporting'].includes(run.status)) {
-    setStep(1,'done','✓');setStep(2,'done','✓');setStep(3,'done','✓');
+    setStep(1,'done','✓'); setStep(2,'done','✓'); setStep(3,'done','✓');
     await loadReview();
   } else if (run.status === 'done') {
-    setStep(1,'done','✓');setStep(2,'done','✓');setStep(3,'done','✓');setStep(4,'done','✓');
-    renderExport('clean');
-    setStep(5,'done','✓');
+    setStep(1,'done','✓'); setStep(2,'done','✓'); setStep(3,'done','✓'); setStep(4,'done','✓');
+    renderExport('clean'); setStep(5,'done','✓');
   }
   toast(`Run ${runId.substring(0,8)}… đã tải`, 'info');
 }
 
-// ═══════════════════════════════════════════════════════════
-// UPLOAD TEMPLATE
-// ═══════════════════════════════════════════════════════════
 async function deleteRun(id) {
   try {
-    const res = await fetch(`/api/pipeline/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/pipeline/${id}`, { method:'DELETE' });
     if (!res.ok) throw new Error(await res.text());
-    toast('Đã xóa run', 'success');
-    await loadRuns();
-  } catch(e) {
-    toast('Xóa thất bại: ' + e.message, 'error');
-  }
+    toast('Đã xóa run', 'success'); await loadRuns();
+  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
 }
 
 async function clearAllRuns() {
   if (!confirm('Xóa toàn bộ lịch sử runs?\n\nThao tác này không thể hoàn tác.')) return;
   try {
-    const res = await fetch('/api/pipeline', { method: 'DELETE' });
+    const res = await fetch('/api/pipeline', { method:'DELETE' });
     if (!res.ok) throw new Error(await res.text());
-    toast('Đã xóa toàn bộ lịch sử', 'success');
-    await loadRuns();
-  } catch(e) {
-    toast('Xóa thất bại: ' + e.message, 'error');
-  }
+    toast('Đã xóa toàn bộ lịch sử', 'success'); await loadRuns();
+  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
 }
 
 async function deleteTemplate(id, name) {
   if (!confirm(`Xóa template "${name}"?\n\nThao tác này xóa luôn trong DB và không thể hoàn tác.`)) return;
   try {
-    const res = await fetch(`/api/templates/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/templates/${id}`, { method:'DELETE' });
     if (!res.ok) throw new Error(await res.text());
     if (selTmplId === id) { selTmplId = null; showEmpty(); }
-    toast('Đã xóa template', 'success');
-    await loadTemplates();
-  } catch(e) {
-    toast('Xóa thất bại: ' + e.message, 'error');
-  }
+    toast('Đã xóa template', 'success'); await loadTemplates();
+  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
 }
 
 function showUploadTemplate() {
@@ -1425,24 +1064,12 @@ function showUploadTemplate() {
     <div style="max-width:480px">
       <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">📤 Upload Template .docx</h2>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Tên template *</div>
-          <input id="tmplName" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);
-            border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none"
-            placeholder="VD: Mẫu BC gửi CQUBKTĐU (NQ57)">
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Mô tả</div>
-          <input id="tmplDesc" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);
-            border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none"
-            placeholder="VD: Báo cáo kết quả giám sát...">
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">File .docx *</div>
-          <input type="file" id="tmplFile" accept=".docx"
-            style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);
-            color:var(--text);font-size:12px;padding:8px;width:100%">
-        </div>
+        <div><div style="font-size:11px;color:var(--text3);margin-bottom:5px">Tên template *</div>
+          <input id="tmplName" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="VD: Mẫu BC gửi CQUBKTĐU (NQ57)"></div>
+        <div><div style="font-size:11px;color:var(--text3);margin-bottom:5px">Mô tả</div>
+          <input id="tmplDesc" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="VD: Báo cáo kết quả giám sát..."></div>
+        <div><div style="font-size:11px;color:var(--text3);margin-bottom:5px">File .docx *</div>
+          <input type="file" id="tmplFile" accept=".docx" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:12px;padding:8px;width:100%"></div>
         <div style="display:flex;gap:8px;margin-top:4px">
           <button class="btn btn-primary" onclick="doUploadTemplate()">📤 Upload</button>
           <button class="btn btn-ghost" onclick="renderTmplList();document.getElementById('mainContent').innerHTML=''">Hủy</button>
@@ -1457,12 +1084,9 @@ async function doUploadTemplate() {
   const desc = document.getElementById('tmplDesc').value.trim();
   const file = document.getElementById('tmplFile').files[0];
   if (!name || !file) { toast('Nhập tên và chọn file','error'); return; }
-
   const form = new FormData();
   form.append('file', file); form.append('name', name); form.append('description', desc);
-
   document.getElementById('uploadTmplResult').innerHTML = '<div style="color:var(--text3);font-size:12px"><div class="spin"></div> Đang upload và phân tích...</div>';
-
   try {
     const r = await fetch(`${API}/templates/upload`, { method:'POST', body:form });
     if (!r.ok) {
@@ -1470,32 +1094,20 @@ async function doUploadTemplate() {
       const msg = e.detail || 'Upload failed';
       if (r.status === 409) {
         document.getElementById('uploadTmplResult').innerHTML =
-          `<div style="color:var(--gold);font-size:12px;line-height:1.6">
-            ⚠️ ${msg}
+          `<div style="color:var(--gold);font-size:12px;line-height:1.6">⚠️ ${msg}
             <div style="margin-top:8px;display:flex;gap:8px">
-              <button class="btn btn-ghost" style="font-size:10px"
-                onclick="document.getElementById('tmplName').value='';document.getElementById('tmplName').focus()">
-                ✏️ Đổi tên
-              </button>
-              <button class="btn btn-ghost" style="font-size:10px"
-                onclick="switchSidebarTab('tmpl')">
-                📋 Xem template cũ
-              </button>
-            </div>
-          </div>`;
-      } else {
-        throw new Error(msg);
-      }
+              <button class="btn btn-ghost" style="font-size:10px" onclick="document.getElementById('tmplName').value='';document.getElementById('tmplName').focus()">✏️ Đổi tên</button>
+              <button class="btn btn-ghost" style="font-size:10px" onclick="switchSidebarTab('tmpl')">📋 Xem template cũ</button>
+            </div></div>`;
+      } else { throw new Error(msg); }
       return;
     }
     const tmpl = await r.json();
-    document.getElementById('uploadTmplResult').innerHTML =
-      `<div style="color:var(--green);font-size:12px">✅ Upload thành công! ${tmpl.fields.length} trường được phát hiện.</div>`;
+    document.getElementById('uploadTmplResult').innerHTML = `<div style="color:var(--green);font-size:12px">✅ Upload thành công! ${tmpl.fields.length} trường được phát hiện.</div>`;
     await loadTemplates();
     setTimeout(() => selectTemplate(tmpl.id), 800);
   } catch(e) {
-    document.getElementById('uploadTmplResult').innerHTML =
-      `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
+    document.getElementById('uploadTmplResult').innerHTML = `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
   }
 }
 
@@ -1523,6 +1135,18 @@ function addLog(el, msg, cls='') {
   el.scrollTop = el.scrollHeight;
 }
 
+function autoResizeTa(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(36, ta.scrollHeight) + 'px';
+}
+
+function autoResizeIframe(iframe) {
+  try {
+    const h = iframe.contentDocument?.body?.scrollHeight;
+    if (h && h > 400) iframe.style.minHeight = h + 'px';
+  } catch {}
+}
+
 // ═══════════════════════════════════════════════════════════
 // PREVIEW MODAL
 // ═══════════════════════════════════════════════════════════
@@ -1531,10 +1155,7 @@ async function openPreview() {
   modal.style.display = 'flex';
   modal.style.flexDirection = 'column';
   document.body.style.overflow = 'hidden';
-
   const contentEl = document.getElementById('previewContent');
-
-  // Load stats từ results
   try {
     const rs = await fetch(`${API}/pipeline/${currentRun}/results`);
     const results = await rs.json();
@@ -1548,29 +1169,11 @@ async function openPreview() {
       <span style="background:rgba(239,71,111,.15);color:#ef476f;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600">🔴 ${low} thấp</span>`;
     document.getElementById('previewTemplateName').textContent = tmpl.name || 'Báo cáo';
   } catch {}
-
-  // Render trang giấy với iframe
   contentEl.innerHTML = `
     <div style="width:794px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);min-height:1123px">
-      <iframe id="previewIframe"
-        src="${API}/pipeline/${currentRun}/preview-html"
-        style="width:100%;min-height:1123px;border:none;display:block"
-        onload="autoResizeIframe(this)"
-      ></iframe>
+      <iframe id="previewIframe" src="${API}/pipeline/${currentRun}/preview-html"
+        style="width:100%;min-height:1123px;border:none;display:block" onload="autoResizeIframe(this)"></iframe>
     </div>`;
-
-}
-
-function autoResizeTa(ta) {
-  ta.style.height = 'auto';
-  ta.style.height = Math.max(36, ta.scrollHeight) + 'px';
-}
-
-function autoResizeIframe(iframe) {
-  try {
-    const h = iframe.contentDocument?.body?.scrollHeight;
-    if (h && h > 400) iframe.style.minHeight = h + 'px';
-  } catch {}
 }
 
 function closePreview() {
@@ -1589,7 +1192,10 @@ async function downloadFromPreview() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     const cd   = r.headers.get('Content-Disposition')||'';
-    const name = cd.match(/filename="(.+)"/)?.[1] || 'report.docx';
+    // Hỗ trợ cả filename*=UTF-8''... (RFC5987) lẫn filename="..."
+    const nameRfc    = cd.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    const nameSimple = cd.match(/filename="([^"]+)"/i)?.[1];
+    const name = nameRfc ? decodeURIComponent(nameRfc) : (nameSimple || 'report.docx');
     a.href=url; a.download=name; a.click();
     URL.revokeObjectURL(url);
     res.innerHTML = `<span style="color:var(--green);font-size:11px">✅ Đã tải: <strong>${name}</strong></span>`;
@@ -1599,7 +1205,6 @@ async function downloadFromPreview() {
   }
 }
 
-// Đóng modal khi click ngoài
 document.addEventListener('click', e => {
   const modal = document.getElementById('previewModal');
   if (e.target === modal) closePreview();
@@ -1616,60 +1221,35 @@ init();
 </script>
 
 <!-- Footer -->
-<footer style="margin-top:40px;padding:16px 28px;border-top:1px solid var(--border2);
-  background:var(--bg2);text-align:center;font-size:11px;color:var(--text3)">
+<footer style="margin-top:40px;padding:16px 28px;border-top:1px solid var(--border2);background:var(--bg2);text-align:center;font-size:11px;color:var(--text3)">
   © 2025 <strong style="color:var(--text2)">Nhóm NCCN</strong> — Ban Công nghệ &nbsp;|&nbsp;
   BIDV Report AI Agent &nbsp;|&nbsp; Powered by LangGraph · OpenAI GPT-4o
 </footer>
 
 <!-- Preview Modal -->
 <div id="previewModal" style="display:none;position:fixed;inset:0;z-index:1000;background:#2d2d2d">
-
-  <!-- ── Toolbar ── -->
-  <div style="height:52px;background:#1e1e1e;border-bottom:1px solid #3a3a3a;
-    display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0">
-
-    <!-- Left: icon + title -->
+  <div style="height:52px;background:#1e1e1e;border-bottom:1px solid #3a3a3a;display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0">
     <div style="display:flex;align-items:center;gap:10px;min-width:0">
-      <div style="width:28px;height:28px;background:#1565c0;border-radius:4px;
-        display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📄</div>
+      <div style="width:28px;height:28px;background:#1565c0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📄</div>
       <div style="overflow:hidden">
-        <div id="previewTemplateName" style="font-size:12px;font-weight:600;color:#e8e8e8;
-          white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div id="previewTemplateName" style="font-size:12px;font-weight:600;color:#e8e8e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
         <div style="font-size:10px;color:#888">Xem trước báo cáo</div>
       </div>
     </div>
-
-    <!-- Center: stats chips -->
     <div id="previewStats" style="display:flex;gap:8px;margin-left:auto;margin-right:auto"></div>
-
-    <!-- Right: export + close -->
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
       <div style="display:flex;align-items:center;gap:0;background:#2d2d2d;border:1px solid #444;border-radius:5px;overflow:hidden">
         <div style="padding:0 10px;font-size:10px;color:#aaa;border-right:1px solid #444;white-space:nowrap">Định dạng</div>
-        <select id="previewExportMode" style="background:transparent;border:none;color:#e8e8e8;
-          padding:6px 10px;font-size:11px;outline:none;cursor:pointer">
+        <select id="previewExportMode" style="background:transparent;border:none;color:#e8e8e8;padding:6px 10px;font-size:11px;outline:none;cursor:pointer">
           <option value="clean">Clean (.docx)</option>
           <option value="tracked">Tracked changes</option>
         </select>
       </div>
-      <button onclick="downloadFromPreview()" style="display:flex;align-items:center;gap:6px;
-        background:#1565c0;border:none;color:#fff;padding:7px 14px;border-radius:5px;
-        font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap"
-        onmouseover="this.style.background='#1976d2'"
-        onmouseout="this.style.background='#1565c0'">
-        ⬇ Tải xuống
-      </button>
+      <button onclick="downloadFromPreview()" style="display:flex;align-items:center;gap:6px;background:#1565c0;border:none;color:#fff;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap" onmouseover="this.style.background='#1976d2'" onmouseout="this.style.background='#1565c0'">⬇ Tải xuống</button>
       <div id="previewDlResult" style="font-size:10px;color:#aaa"></div>
-      <button onclick="closePreview()" style="background:none;border:1px solid #444;color:#aaa;
-        width:30px;height:30px;border-radius:5px;font-size:16px;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0"
-        onmouseover="this.style.background='#3a3a3a'"
-        onmouseout="this.style.background='none'">✕</button>
+      <button onclick="closePreview()" style="background:none;border:1px solid #444;color:#aaa;width:30px;height:30px;border-radius:5px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0" onmouseover="this.style.background='#3a3a3a'" onmouseout="this.style.background='none'">✕</button>
     </div>
   </div>
-
-  <!-- ── Document area ── -->
   <div style="height:calc(100vh - 52px);overflow-y:auto;background:#525659;padding:32px 0" id="previewScrollArea">
     <div id="previewContent" style="max-width:794px;margin:0 auto"></div>
   </div>
