@@ -535,6 +535,159 @@ async function doUploadSource() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// SOURCE PICKER MODAL (Step 2)
+// ═══════════════════════════════════════════════════════════
+function openSrcPickerModal() {
+  // Tạo overlay modal
+  const overlay = document.createElement('div');
+  overlay.id = 'srcPickerModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:flex;align-items:center;justify-content:center';
+
+  const folders = {};
+  allSourceDocs.forEach(d => {
+    const f = d.folder || 'Chưa phân loại';
+    if (!folders[f]) folders[f] = [];
+    folders[f].push(d);
+  });
+
+  const folderHTML = Object.keys(folders).length === 0
+    ? `<div style="color:var(--text3);font-size:12px;padding:20px;text-align:center">
+        Chưa có tài liệu nào trong kho.<br>
+        <button class="btn btn-ghost" style="margin-top:10px;font-size:11px"
+          onclick="document.getElementById('srcPickerModal').remove();showUploadSource()">
+          📤 Upload tài liệu mới
+        </button>
+       </div>`
+    : Object.entries(folders).map(([folder, docs], idx) => {
+        const fid = 'picker-folder-' + idx;
+        return `
+        <div class="src-folder-group" style="margin-bottom:6px">
+          <div class="src-folder-header" onclick="toggleFolder('${fid}')" style="padding:7px 12px">
+            <span class="src-folder-icon">📁</span>
+            <span class="src-folder-name">${folder}</span>
+            <span class="src-folder-count">${docs.length}</span>
+            <span id="chev-${fid}">▾</span>
+          </div>
+          <div class="src-folder-body" id="${fid}" style="padding-left:10px;padding-top:4px">
+            ${docs.map(d => {
+              const checked = uploadedSrcIds.includes(d.id) ? 'checked' : '';
+              return `
+              <label class="src-check-item" id="picker-lbl-${d.id}"
+                style="${checked ? 'border-color:var(--accent);background:rgba(0,119,182,.07)' : ''}">
+                <input type="checkbox" value="${d.id}" ${checked}
+                  onchange="onPickerCheck(this,'picker-lbl-${d.id}')">
+                <div style="min-width:0">
+                  <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
+                  <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
+                </div>
+              </label>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('');
+
+  overlay.innerHTML = `
+    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
+      width:480px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;
+      box-shadow:0 24px 64px rgba(0,0,0,.4);overflow:hidden">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        padding:14px 18px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">📂 Chọn Tài liệu Nguồn</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:1px">Chọn tài liệu để AI tham khảo khi điền nội dung</div>
+        </div>
+        <button onclick="document.getElementById('srcPickerModal').remove()"
+          style="background:none;border:1px solid var(--border2);color:var(--text3);
+          width:28px;height:28px;border-radius:4px;font-size:14px;cursor:pointer">✕</button>
+      </div>
+
+      <!-- Folder list -->
+      <div style="flex:1;overflow-y:auto;padding:12px 14px">
+        ${folderHTML}
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:12px 18px;border-top:1px solid var(--border2);background:var(--bg2);
+        display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost" style="font-size:11px"
+            onclick="showUploadSource()">📤 Upload mới</button>
+          <span id="pickerCount" style="font-size:11px;color:var(--text3)">0 đã chọn</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost"
+            onclick="document.getElementById('srcPickerModal').remove()">Hủy</button>
+          <button class="btn btn-primary" onclick="confirmSrcPicker()">✓ Xác nhận</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  // Load fresh nếu chưa có
+  if (!allSourceDocs.length) {
+    fetch(`${API}/sources`).then(r=>r.json()).then(docs => {
+      allSourceDocs = docs;
+      document.getElementById('srcPickerModal')?.remove();
+      openSrcPickerModal();
+    });
+  }
+
+  updatePickerCount();
+}
+
+function onPickerCheck(cb, lblId) {
+  document.getElementById(lblId)?.classList.toggle('selected', cb.checked);
+  if (cb.checked) cb.closest('label').style.cssText += 'border-color:var(--accent);background:rgba(0,119,182,.07)';
+  else { const lbl = document.getElementById(lblId); if(lbl) lbl.style.borderColor=''; lbl.style.background=''; }
+  updatePickerCount();
+}
+
+function updatePickerCount() {
+  const n = document.querySelectorAll('#srcPickerModal input[type=checkbox]:checked').length;
+  const el = document.getElementById('pickerCount');
+  if (el) el.textContent = n + ' đã chọn';
+}
+
+function confirmSrcPicker() {
+  const checked = [...document.querySelectorAll('#srcPickerModal input[type=checkbox]:checked')];
+  const ids  = checked.map(cb => cb.value);
+  const docs = ids.map(id => allSourceDocs.find(d => d.id === id)).filter(Boolean);
+
+  uploadedSrcIds = ids;
+  uploadedDocs   = docs;
+
+  // Cập nhật preview trong step 2
+  const preview = document.getElementById('selectedSrcPreview');
+  const list    = document.getElementById('selectedSrcList');
+  const badge   = document.getElementById('selectedSrcCount');
+  const btnPick = document.getElementById('btnPickSrc');
+
+  if (docs.length) {
+    list.innerHTML = docs.map(d => `
+      <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;
+        background:var(--bg2);border-radius:4px;font-size:11px">
+        <span>${d.filename.endsWith('.pdf')?'📄':'📝'}</span>
+        <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.filename}</span>
+        <span style="color:var(--text3);font-family:monospace;flex-shrink:0">${((d.file_size||0)/1024).toFixed(1)} KB</span>
+      </div>`).join('');
+    if (preview) preview.style.display = 'block';
+    if (badge) { badge.textContent = docs.length; badge.style.display = 'inline'; }
+    if (btnPick) btnPick.innerHTML = `📂 Thay đổi tài liệu <span style="background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px">${docs.length}</span>`;
+  } else {
+    if (preview) preview.style.display = 'none';
+    if (badge) badge.style.display = 'none';
+    if (btnPick) btnPick.innerHTML = '📂 Chọn tài liệu nguồn';
+  }
+
+  document.getElementById('srcPickerModal').remove();
+  if (docs.length) toast(`✅ Đã chọn ${docs.length} tài liệu`, 'success');
+}
+
 async function loadSrcDbList() {
   const el = document.getElementById('srcDbList');
   if (!el) return;
@@ -543,20 +696,42 @@ async function loadSrcDbList() {
     if (!r.ok) { el.innerHTML = '<div style="color:var(--text3);font-size:11px">Không tải được danh sách.</div>'; return; }
     const docs = await r.json();
     allSourceDocs = docs;
-    if (!docs.length) { el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">DB chưa có tài liệu. Upload mới bên dưới.</div>'; return; }
+    if (!docs.length) {
+      el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">DB chưa có tài liệu. Upload mới bên dưới.</div>';
+      return;
+    }
+
+    // Nhóm theo folder (giống tab Tài liệu)
     const groups = {};
     docs.forEach(d => {
-      const grp = d.used_in_templates?.length ? d.used_in_templates[0] : '— Chưa phân nhóm —';
-      if (!groups[grp]) groups[grp] = [];
-      groups[grp].push(d);
+      const f = d.folder || 'Chưa phân loại';
+      if (!groups[f]) groups[f] = [];
+      groups[f].push(d);
     });
-    el.innerHTML = Object.entries(groups).map(([grp, items]) => `
-      <div class="src-group-label">${grp}</div>
-      ${items.map(d => `<label class="src-check-item" id="lbl-${d.id}">
-        <input type="checkbox" value="${d.id}" onchange="onSrcCheck(this,'lbl-${d.id}')">
-        <div><div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
-        <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div></div>
-      </label>`).join('')}`).join('');
+
+    el.innerHTML = Object.entries(groups).map(([folder, items], idx) => {
+      const fid = 'step2-folder-' + idx;
+      return `
+      <div class="src-folder-group">
+        <div class="src-folder-header" onclick="toggleFolder('${fid}')"
+          style="padding:6px 10px">
+          <span class="src-folder-icon">📁</span>
+          <span class="src-folder-name">${folder}</span>
+          <span class="src-folder-count">${items.length}</span>
+          <span style="font-size:9px;color:var(--text3);margin-left:4px" id="chev-${fid}">▾</span>
+        </div>
+        <div class="src-folder-body" id="${fid}" style="padding-left:8px">
+          ${items.map(d => `
+            <label class="src-check-item" id="lbl-${d.id}" style="margin-bottom:3px">
+              <input type="checkbox" value="${d.id}" onchange="onSrcCheck(this,'lbl-${d.id}')">
+              <div style="min-width:0">
+                <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
+                <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
+              </div>
+            </label>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
   } catch(e) { el.innerHTML = `<div style="color:var(--text3);font-size:11px">Lỗi: ${e.message}</div>`; }
 }
 
@@ -647,7 +822,6 @@ function selectTemplate(id) {
 
 function renderPipelineUI() {
   const t = templates.find(x => x.id === selTmplId);
-  setTimeout(loadSrcDbList, 100);
   document.getElementById('mainContent').innerHTML = `
     <div class="pipeline">
       <div class="step done" id="s1">
@@ -672,26 +846,22 @@ function renderPipelineUI() {
         </div>
         <div class="step-body">
           <div id="phaseUpload">
-            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-              <div style="display:flex;align-items:center;gap:6px">
-                <span style="background:var(--accent);color:#fff;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">A</span>
-                Chọn tài liệu nguồn
-              </div>
-              <button onclick="toggleUploadNew()" id="btnToggleNew" style="font-size:10px;background:none;border:1px solid var(--border2);color:var(--text3);border-radius:4px;padding:3px 8px;cursor:pointer">+ Upload mới</button>
+            <!-- Danh sách tài liệu đã chọn -->
+            <div id="selectedSrcPreview" style="display:none;margin-bottom:10px">
+              <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;
+                letter-spacing:.5px;margin-bottom:6px">Tài liệu đã chọn</div>
+              <div id="selectedSrcList" style="display:flex;flex-direction:column;gap:4px"></div>
             </div>
-            <div id="srcDbList" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"><div style="color:var(--text3);font-size:11px">Đang tải tài liệu...</div></div>
-            <div id="uploadNewPanel" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2)">
-              <div class="upload-zone" id="uploadZone" onclick="document.getElementById('srcInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="onDrop(event)" ondragleave="this.classList.remove('drag')">
-                <input type="file" id="srcInput" multiple accept=".pdf,.docx,.doc,.txt" onchange="onFilePick(event)">
-                <div style="font-size:22px;margin-bottom:4px">📁</div>
-                <div style="font-size:11px;font-weight:600;color:var(--text2)">Kéo thả hoặc click để upload</div>
-                <div style="font-size:10px;color:var(--text3);margin-top:1px">PDF · DOCX · DOC · TXT</div>
-              </div>
-              <div class="file-chips" id="fileChips"></div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-ghost" onclick="openSrcPickerModal()" id="btnPickSrc"
+                style="display:flex;align-items:center;gap:7px">
+                📂 Chọn tài liệu nguồn
+                <span id="selectedSrcCount" style="background:var(--accent);color:#fff;
+                  font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;display:none">0</span>
+              </button>
               <button class="btn btn-primary" onclick="doUploadFiles()" id="btnUpload">▶ Tiếp tục</button>
-              <button class="btn btn-ghost" onclick="skipSources()" style="font-size:11px">Bỏ qua (AI tự generate)</button>
+              <button class="btn btn-ghost" onclick="skipSources()" style="font-size:11px">Bỏ qua</button>
             </div>
             <div id="uploadLog" style="margin-top:8px"></div>
           </div>
@@ -768,18 +938,8 @@ async function doUploadFiles() {
       if (!rs.ok) throw new Error(await rs.text());
       currentRun = (await rs.json()).run_id;
     }
-    btn.innerHTML = '<div class="spin"></div> Đang upload...';
-    const checkedIds = getCheckedSrcIds();
-    let newDocs = [];
-    if (pendingFiles.length > 0) {
-      const form = new FormData();
-      pendingFiles.forEach(f => form.append('files', f));
-      const r = await fetch(`${API}/sources/upload`, { method:'POST', body:form });
-      if (!r.ok) throw new Error(await r.text());
-      newDocs = await r.json();
-    }
-    uploadedSrcIds = [...checkedIds, ...newDocs.map(d => d.id)];
-    uploadedDocs   = [...allSourceDocs.filter(d => checkedIds.includes(d.id)), ...newDocs];
+    btn.innerHTML = '<div class="spin"></div> Đang xử lý...';
+    // uploadedSrcIds và uploadedDocs đã được set từ confirmSrcPicker()
     if (!uploadedSrcIds.length) { skipSources(); btn.disabled=false; btn.innerHTML='▶ Tiếp tục'; return; }
     btn.innerHTML = '<div class="spin"></div> Đang xử lý...';
     await fetch(`${API}/pipeline/${currentRun}/attach_sources`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ source_doc_ids: uploadedSrcIds }) });
