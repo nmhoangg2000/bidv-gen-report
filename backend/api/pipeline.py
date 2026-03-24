@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agent.pipeline import PipelineState, compiled_graph
+from agent.pipeline import PipelineState, compiled_graph_with_memory as compiled_graph
 from utils.database import get_db
 from utils.docx_parser import fill_and_export
 
@@ -208,7 +208,7 @@ async def attach_sources(
     db:     AsyncSession = Depends(get_db),
 ):
     """Gắn source docs vào run sau khi upload — cập nhật source_docs trong LangGraph state."""
-    from agent.pipeline import compiled_graph, PipelineState
+    from agent.pipeline import compiled_graph_with_memory as compiled_graph, PipelineState
     from utils.database import AsyncSessionLocal
 
     source_doc_ids = req.get("source_doc_ids", [])

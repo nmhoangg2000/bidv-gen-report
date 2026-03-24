@@ -3,8 +3,11 @@ BIDV Report AI Agent — LangGraph Pipeline (OpenAI)
 Graph: analyze_template → upload_sources ⏸ → extract_sources ⏸ → write_fields ⏸ → human_review → export_doc
 """
 
+import asyncio
 import json
 import os
+import re
+from datetime import datetime
 from typing import Annotated, Dict, List, Optional, TypedDict
 
 from openai import AsyncOpenAI
@@ -30,8 +33,14 @@ def get_ls_callbacks():
     return [_ls_tracer] if (_ls_enabled and _ls_tracer) else []
 
 
+# ── OpenAI client singleton ────────────────────────────────────────────────
+_client: Optional[AsyncOpenAI] = None
+
 def get_client() -> AsyncOpenAI:
-    return AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+    return _client
 
 
 # ─── State Schema ─────────────────────────────────────────────────────────────
@@ -69,10 +78,9 @@ class PipelineState(TypedDict):
 
 # ─── Node 1: analyze_template ─────────────────────────────────────────────────
 
-async def node_analyze_template(state: PipelineState) -> PipelineState:
+async def node_analyze_template(state: PipelineState) -> dict:
     n = len(state["template_fields"])
     return {
-        **state,
         "current_step": 1,
         "status": "analyzing",
         "messages": [HumanMessage(content=
@@ -83,10 +91,9 @@ async def node_analyze_template(state: PipelineState) -> PipelineState:
 
 # ─── Node 2a: upload_sources ──────────────────────────────────────────────────
 
-async def node_upload_sources(state: PipelineState) -> PipelineState:
+async def node_upload_sources(state: PipelineState) -> dict:
     docs = state.get("source_docs", [])
     return {
-        **state,
         "current_step": 2,
         "status": "uploaded",
         "messages": [HumanMessage(content=
@@ -97,7 +104,7 @@ async def node_upload_sources(state: PipelineState) -> PipelineState:
 
 # ─── Node 2b: extract_sources (interrupt trước node này) ──────────────────────
 
-async def node_extract_sources(state: PipelineState) -> PipelineState:
+async def node_extract_sources(state: PipelineState) -> dict:
     docs = state.get("source_docs", [])
     context = "\n\n".join(
         f"=== {d['filename']} ===\n{d['text'][:10000]}"
@@ -105,7 +112,6 @@ async def node_extract_sources(state: PipelineState) -> PipelineState:
     ) if docs else "(Không có tài liệu nguồn — AI sẽ generate dựa trên ngữ cảnh template)"
 
     return {
-        **state,
         "current_step":   3,
         "status":         "extracting",
         "source_context": context,
@@ -117,46 +123,53 @@ async def node_extract_sources(state: PipelineState) -> PipelineState:
 
 # ─── Node 3: write_fields ─────────────────────────────────────────────────────
 
-async def node_write_fields(state: PipelineState) -> PipelineState:
-    import asyncio
-    client  = get_client()
-    fields  = state["template_fields"]
-    context = state.get("source_context", "")
-    model   = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+async def node_write_fields(state: PipelineState) -> dict:
+    client    = get_client()
+    fields    = state["template_fields"]
+    context   = state.get("source_context", "")
+    model     = os.getenv("OPENAI_MODEL", "gpt-4o")
     semaphore = asyncio.Semaphore(int(os.getenv("OPENAI_CONCURRENCY", "3")))
 
-    from datetime import datetime
-    today = datetime.now()
-    today_str  = today.strftime("%d/%m/%Y")           # 19/03/2026
-    month_year = today.strftime("tháng %m/%Y")        # tháng 03/2026
-    quarter    = f"Quý {(today.month-1)//3+1}/{today.year}"  # Quý I/2026
+    today      = datetime.now()
+    today_str  = today.strftime("%d/%m/%Y")
+    month_year = today.strftime("tháng %m/%Y")
+    quarter    = f"Quý {(today.month - 1) // 3 + 1}/{today.year}"
 
     system_msg = f"""Bạn là chuyên gia soạn thảo văn bản hành chính ngân hàng BIDV.
-Nhiệm vụ: điền nội dung vào các trường còn trống trong báo cáo dựa trên tài liệu nguồn được cung cấp.
+Nhiệm vụ: điền nội dung CHI TIẾT, ĐẦY ĐỦ vào các trường còn trống dựa trên tài liệu nguồn.
 
 NGÀY HIỆN TẠI: {today_str} ({month_year}, {quarter})
-Khi placeholder chứa DD/MM/YYYY, ngày tháng, hoặc yêu cầu điền ngày — dùng ngày thực tế ở trên.
 
-VĂN PHONG BẮT BUỘC:
-- Ngôn ngữ trang trọng, hành chính — tuyệt đối không dùng ngôn ngữ thông thường
-- Câu văn súc tích, đầy đủ thông tin, không dài dòng
-- Dùng chủ ngữ "BIDV", "Ngân hàng", "Đơn vị" — không dùng "chúng tôi", "tôi"
-- Số liệu phải có đơn vị rõ ràng: tỷ đồng, %, người, dự án...
-- Thời gian viết đầy đủ: "Quý I/2025", "tháng 10/2025", "năm 2025"
-- Viết hoa đúng danh từ riêng: BIDV, NHNN, Bộ Công an, NQ57...
-- Không dùng dấu chấm lửng (...), không viết tắt tùy tiện
-- Kết quả phải cụ thể, có số liệu — tránh chung chung kiểu "đã triển khai tốt"
+NGUYÊN TẮC BẮT BUỘC — QUAN TRỌNG NHẤT:
+1. LUÔN trích xuất số liệu cụ thể từ tài liệu nguồn: con số, %, tỷ đồng, số khách hàng, số dự án, ngày tháng
+2. KHÔNG ĐƯỢC viết câu chung chung: "đã triển khai tốt", "đạt kết quả khả quan", "tiếp tục phát triển"
+3. Mỗi câu PHẢI có ít nhất 1 thông tin định lượng hoặc định danh cụ thể
+4. Nếu tài liệu nguồn có nhiều số liệu liên quan → ĐƯA TẤT CẢ vào, không bỏ sót
+5. Output PHẢI dài bằng hoặc HƠN placeholder gốc — TUYỆT ĐỐI không rút gọn
 
-VÍ DỤ VĂN PHONG ĐÚNG:
-✓ "BIDV đã hoàn thành xác thực sinh trắc học cho 8,2 triệu khách hàng cá nhân, đạt 94% kế hoạch năm."
-✓ "Trong Quý III/2025, BIDV triển khai 12 dự án CNTT trọng điểm, giải ngân 320 tỷ đồng."
-✗ SAI: "Ngân hàng đã làm tốt việc này và đạt được nhiều kết quả khả quan..."
+ĐỘ DÀI BẮT BUỘC theo độ dài placeholder:
+- < 50 ký tự: tối thiểu 2 câu có số liệu cụ thể
+- 50-200 ký tự: tối thiểu 4-6 câu, đủ ý, đủ số liệu
+- 200-500 ký tự: tối thiểu 6-10 câu, liệt kê nhiều kết quả
+- > 500 ký tự: viết đầy đủ nhiều đoạn, tương đương bản gốc
 
-Luôn trả lời bằng JSON hợp lệ, không thêm markdown hay giải thích ngoài JSON."""
+VĂN PHONG:
+- Ngôn ngữ trang trọng, hành chính
+- Chủ ngữ: "BIDV", "Ngân hàng" — không dùng "chúng tôi"
+- Đơn vị đầy đủ: tỷ đồng, %, triệu người, dự án
+- Thời gian cụ thể: "Quý I/2026", "tháng 3/2026", "ngày 12/05/2025"
+- Viết hoa danh từ riêng: BIDV, NHNN, Bộ Công an, NQ57, CSDLQG
+
+SO SÁNH ĐÚNG/SAI:
+✗ SAI: "BIDV đã triển khai nhiều giải pháp, đạt kết quả tốt."
+✓ ĐÚNG: "BIDV đã xác thực sinh trắc học cho 9,8 triệu khách hàng cá nhân qua CCCD gắn chip và VNeID, trong đó 9,4 triệu qua kênh quầy và Smartbanking, 442.000 qua ứng dụng VNeID tính đến ngày 10/11/2025."
+
+Trả lời CHỈ bằng JSON hợp lệ, không markdown."""
 
     async def call_one(field) -> FieldResult:
         field_type = field.get("field_type", "sentence")
         type_hint  = field.get("type_hint", "")
+        ph_len     = len(field.get("placeholder", ""))
 
         user_msg = f"""Điền nội dung vào trường còn trống trong báo cáo BIDV.
 
@@ -172,12 +185,15 @@ NỘI DUNG CẦN THAY THẾ (placeholder hiện tại):
 TÀI LIỆU NGUỒN (dùng để tìm số liệu và thông tin chính xác):
 {context[:14000]}
 
-HƯỚNG DẪN CHUNG:
-1. Ưu tiên tìm thông tin CỤ THỂ từ tài liệu nguồn
-2. Nội dung phải PHÙ HỢP với ngữ cảnh đoạn văn xung quanh
-3. Tuân thủ hướng dẫn LOẠI TRƯỜNG ở trên
-4. Giữ nguyên định dạng nếu placeholder có cấu trúc đặc biệt (danh sách, bảng...)
-5. KHÔNG cắt ngắn nội dung nếu placeholder dài
+ĐỘ DÀI YÊU CẦU: Placeholder gốc dài {ph_len} ký tự → output phải dài TỐI THIỂU {max(ph_len, 50)} ký tự
+BẮT BUỘC: Trích xuất và liệt kê TẤT CẢ số liệu, kết quả, dự án có trong tài liệu nguồn liên quan đến nội dung này
+
+HƯỚNG DẪN:
+1. Đọc kỹ tài liệu nguồn, tìm TẤT CẢ số liệu liên quan đến placeholder này
+2. Liệt kê đầy đủ: số lượng, %, tỷ đồng, tên dự án, ngày tháng, đơn vị thực hiện
+3. Nếu placeholder là đoạn văn dài → viết nhiều câu, nhiều ý, không bỏ sót
+4. KHÔNG viết câu chung chung — mỗi câu phải có ít nhất 1 con số hoặc tên cụ thể
+5. Nội dung phải PHÙ HỢP ngữ cảnh xung quanh
 
 Trả về JSON (chỉ JSON, không markdown):
 {{
@@ -191,31 +207,53 @@ Quy tắc confidence:
 - mid : suy luận có căn cứ từ ngữ cảnh, không có số liệu cụ thể
 - low : không có tài liệu nguồn hoặc không tìm thấy thông tin liên quan, tự generate"""
 
-        ph_len = len(field.get("placeholder", ""))
         if ph_len < 50:
-            max_tok = 300
+            max_tok = 500
         elif ph_len < 200:
-            max_tok = 800
+            max_tok = 1500
         elif ph_len < 500:
-            max_tok = 1600
-        else:
             max_tok = 3000
+        else:
+            max_tok = 4000
 
+        parsed = None
         async with semaphore:
-            try:
-                response = await client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": system_msg},
-                        {"role": "user",   "content": user_msg},
-                    ],
-                    max_tokens=max_tok,
-                    temperature=0.2,
-                    response_format={"type": "json_object"},
-                )
-                parsed = json.loads(response.choices[0].message.content.strip())
-            except Exception as e:
-                parsed = {"value": "", "confidence": "low", "reason": f"Lỗi: {e}"}
+            for attempt in range(5):
+                try:
+                    response = await asyncio.wait_for(
+                        client.chat.completions.create(
+                            model=model,
+                            messages=[
+                                {"role": "system", "content": system_msg},
+                                {"role": "user",   "content": user_msg},
+                            ],
+                            max_tokens=max_tok,
+                            temperature=0.3,
+                            response_format={"type": "json_object"},
+                        ),
+                        timeout=90,
+                    )
+                    parsed = json.loads(response.choices[0].message.content.strip())
+                    break
+                except asyncio.TimeoutError:
+                    parsed = {"value": "", "confidence": "low", "reason": "Timeout sau 90s"}
+                    break
+                except Exception as e:
+                    err_str = str(e)
+                    is_rate_limit = "429" in err_str or "rate_limit" in err_str.lower()
+                    is_transient  = any(x in err_str for x in ("502", "503", "504", "connection"))
+                    if (is_rate_limit or is_transient) and attempt < 4:
+                        wait_match = re.search(r"try again in (\d+\.?\d*)s", err_str)
+                        wait_secs  = float(wait_match.group(1)) if wait_match else 2 ** (attempt + 1)
+                        wait_secs  = min(wait_secs + 1, 60)
+                        print(f"[write_fields] retry {attempt + 1}/5 — wait {wait_secs:.1f}s ({err_str[:60]})")
+                        await asyncio.sleep(wait_secs)
+                        continue
+                    parsed = {"value": "", "confidence": "low", "reason": f"Lỗi: {err_str[:200]}"}
+                    break
+
+        if parsed is None:
+            parsed = {"value": "", "confidence": "low", "reason": "Vượt quá số lần thử lại"}
 
         key = field.get("key") or field.get("field_key", "")
         return FieldResult(
@@ -230,14 +268,32 @@ Quy tắc confidence:
             approved    = False,
         )
 
-    # Gọi tất cả fields song song
-    results: List[FieldResult] = list(await asyncio.gather(*[call_one(f) for f in fields]))
+    raw = await asyncio.gather(*[call_one(f) for f in fields], return_exceptions=True)
+
+    results: List[FieldResult] = []
+    for i, item in enumerate(raw):
+        if isinstance(item, Exception):
+            f   = fields[i]
+            key = f.get("key") or f.get("field_key", "")
+            results.append(FieldResult(
+                field_key   = key,
+                para_idx    = f.get("para_idx", 0),
+                placeholder = f.get("placeholder", ""),
+                context     = f.get("context", ""),
+                ai_value    = "",
+                final_value = "",
+                confidence  = "low",
+                reason      = f"Exception: {item}",
+                approved    = False,
+            ))
+        else:
+            results.append(item)
 
     return {
-        **state,
-        "current_step":  4,
-        "status":        "reviewing",
-        "field_results": results,
+        "current_step":   4,
+        "status":         "reviewing",
+        "field_results":  results,
+        "write_progress": len(results),
         "messages": [HumanMessage(content=
             f"[Step 3] {len(results)} fields filled."
         )],
@@ -246,7 +302,7 @@ Quy tắc confidence:
 
 # ─── Node 4: human_review ─────────────────────────────────────────────────────
 
-async def node_human_review(state: PipelineState) -> PipelineState:
+async def node_human_review(state: PipelineState) -> dict:
     edits   = state.get("human_edits", {})
     results = state.get("field_results", [])
 
@@ -260,7 +316,6 @@ async def node_human_review(state: PipelineState) -> PipelineState:
         }))
 
     return {
-        **state,
         "current_step":  5,
         "status":        "exporting",
         "field_results": updated,
@@ -272,9 +327,8 @@ async def node_human_review(state: PipelineState) -> PipelineState:
 
 # ─── Node 5: export_doc ───────────────────────────────────────────────────────
 
-async def node_export_doc(state: PipelineState) -> PipelineState:
+async def node_export_doc(state: PipelineState) -> dict:
     return {
-        **state,
         "current_step": 6,
         "status":       "done",
         "messages": [HumanMessage(content="[Step 5] Pipeline complete.")],
@@ -302,12 +356,10 @@ def build_graph() -> StateGraph:
     return builder
 
 
-# compiled_graph — dùng cho LangGraph Studio/API (không có checkpointer)
-compiled_graph = build_graph().compile(
-    interrupt_before=["extract_sources", "human_review"],
-)
+# compiled_graph — for LangGraph Studio (no checkpointer, no interrupt/resume support)
+compiled_graph = build_graph().compile()
 
-# compiled_graph_with_memory — dùng cho FastAPI/Docker (có MemorySaver)
+# compiled_graph_with_memory — for FastAPI/Docker (MemorySaver checkpointer, supports interrupt/resume)
 _checkpointer = MemorySaver()
 compiled_graph_with_memory = build_graph().compile(
     checkpointer=_checkpointer,
