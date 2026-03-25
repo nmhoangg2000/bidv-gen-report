@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agent.pipeline import PipelineState, compiled_graph
+from agent.pipeline import PipelineState, compiled_graph_with_memory as compiled_graph
 from utils.database import get_db
 from utils.docx_parser import fill_and_export
 
@@ -208,7 +208,7 @@ async def attach_sources(
     db:     AsyncSession = Depends(get_db),
 ):
     """Gắn source docs vào run sau khi upload — cập nhật source_docs trong LangGraph state."""
-    from agent.pipeline import compiled_graph, PipelineState
+    from agent.pipeline import compiled_graph_with_memory as compiled_graph, PipelineState
     from utils.database import AsyncSessionLocal
 
     source_doc_ids = req.get("source_doc_ids", [])
@@ -290,7 +290,7 @@ async def confirm_extract(
     r = row.mappings().first()
     if not r:
         raise HTTPException(404)
-    if r["status"] not in ("awaiting_extract", "uploading", "uploaded"):
+    if r["status"] not in ("awaiting_extract", "uploading", "uploaded", "error"):
         raise HTTPException(400, f"Run status '{r['status']}' không thể confirm extract")
 
     await db.execute(text(
@@ -406,6 +406,106 @@ async def export_docx(
     )
 
 
+
+@router.get("/{run_id}/preview-html")
+async def preview_html(
+    run_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Convert filled .docx → HTML for in-browser preview."""
+    import subprocess, tempfile, os
+
+    run_row = await db.execute(text(
+        "SELECT template_id FROM pipeline_runs WHERE id = :id"
+    ), {"id": run_id})
+    run = run_row.mappings().first()
+    if not run:
+        raise HTTPException(404)
+
+    tmpl_row = await db.execute(text(
+        "SELECT filename, file_data FROM templates WHERE id = :id"
+    ), {"id": str(run["template_id"])})
+    tmpl = tmpl_row.mappings().first()
+    if not tmpl:
+        raise HTTPException(404, "Template not found")
+
+    results_row = await db.execute(text("""
+        SELECT fr.field_key, tf.para_idx, fr.final_value, fr.confidence
+        FROM field_results fr
+        JOIN template_fields tf ON tf.id = fr.field_id
+        WHERE fr.run_id = :rid
+    """), {"rid": run_id})
+    field_values = [dict(r) for r in results_row.mappings()]
+
+    if not field_values:
+        raise HTTPException(400, "No field results — run pipeline first")
+
+    try:
+        filled_bytes = fill_and_export(
+            bytes(tmpl["file_data"]),
+            field_values,
+            apply_colors=True,  # giữ màu highlight để phân biệt AI-filled
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Fill failed: {e}")
+
+    # Convert docx → HTML bằng pandoc
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx_path = os.path.join(tmp, "preview.docx")
+            html_path = os.path.join(tmp, "preview.html")
+            open(docx_path, "wb").write(filled_bytes)
+
+            result = subprocess.run(
+                ["pandoc", docx_path, "-o", html_path,
+                 "--standalone", "--embed-resources",
+                 "--metadata", "title=Preview",
+                 "--css=/dev/null"],
+                capture_output=True, timeout=30
+            )
+            if result.returncode != 0:
+                raise Exception(result.stderr.decode())
+
+            html = open(html_path, "r", encoding="utf-8").read()
+
+            # Inject A4 styling
+            inject_css = """<style>
+body{margin:0;padding:32px 48px;font-family:'Times New Roman',serif;
+  font-size:13pt;line-height:1.8;color:#111;background:#fff}
+p{margin:.4em 0}
+table{border-collapse:collapse;width:100%}
+td,th{border:1px solid #ccc;padding:6px 10px;font-size:12pt}
+h1,h2,h3{font-size:13pt;font-weight:bold}
+</style>"""
+            html = html.replace("</head>", inject_css + "</head>")
+
+    except FileNotFoundError:
+        # pandoc không có → fallback render đơn giản
+        from utils.docx_parser import extract_fields
+        fields_raw = extract_fields(bytes(tmpl["file_data"]))
+        val_map = {fv["field_key"]: fv.get("final_value","") for fv in field_values}
+        conf_map = {fv["field_key"]: fv.get("confidence","mid") for fv in field_values}
+
+        rows = []
+        for f in fields_raw:
+            key  = f["key"]
+            ctx  = f["context"]
+            val  = val_map.get(key, f["placeholder"])
+            conf = conf_map.get(key, "mid")
+            color = "#d1fae5" if conf=="high" else "#fee2e2" if conf=="low" else "#fef3c7"
+            border= "#059669" if conf=="high" else "#dc2626" if conf=="low" else "#d97706"
+            rows.append(f"""<p style="margin:10px 0">{ctx.replace(f["placeholder"],
+                f'<mark style="background:{color};border-bottom:2px solid {border};padding:1px 3px">{val}</mark>')}</p>""")
+
+        html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>body{{margin:0;padding:32px 48px;font-family:'Times New Roman',serif;
+font-size:13pt;line-height:1.8;color:#111;background:#fff}}</style></head>
+<body>{"".join(rows)}</body></html>"""
+
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
+
 # ─── Background task helpers ─────────────────────────────────────────────────
 
 async def _run_pipeline_steps(run_id: str, initial_state: PipelineState):
@@ -467,6 +567,67 @@ async def _resume_extract(run_id: str):
     import uuid as _uuid
     config = {"configurable": {"thread_id": run_id}}
     try:
+        # Luôn load source_docs từ DB (đảm bảo không bị mất khi attach_sources fail)
+        async with AsyncSessionLocal() as db:
+            run_row = await db.execute(text(
+                "SELECT template_id FROM pipeline_runs WHERE id=:id"
+            ), {"id": run_id})
+            run = run_row.mappings().first()
+            tid = str(run["template_id"])
+
+            src_row = await db.execute(text("""
+                SELECT sd.filename, sd.extracted_text as text
+                FROM run_source_documents rsd
+                JOIN source_documents sd ON sd.id = rsd.doc_id
+                WHERE rsd.run_id = :rid
+            """), {"rid": run_id})
+            source_docs_from_db = [dict(s) for s in src_row.mappings()]
+
+        # Kiểm tra checkpoint còn tồn tại không (MemorySaver mất sau restart)
+        has_state = False
+        try:
+            ckpt = await compiled_graph.aget_state(config)
+            has_state = bool(ckpt and ckpt.values)
+        except Exception:
+            pass
+
+        if not has_state:
+            # Rebuild state từ DB
+            print(f"[Pipeline] Checkpoint lost — rebuilding from DB for run {run_id}")
+            async with AsyncSessionLocal() as db:
+                run_row2 = await db.execute(text("""
+                    SELECT pr.template_id, t.name as template_name
+                    FROM pipeline_runs pr JOIN templates t ON t.id = pr.template_id
+                    WHERE pr.id = :id
+                """), {"id": run_id})
+                run2 = run_row2.mappings().first()
+
+                fields_row = await db.execute(text("""
+                    SELECT field_key as key, para_idx, placeholder, context, field_order
+                    FROM template_fields WHERE template_id=:tid ORDER BY field_order
+                """), {"tid": tid})
+                template_fields = [dict(f) for f in fields_row.mappings()]
+
+            rebuilt = {
+                "run_id": run_id, "template_id": tid,
+                "template_name": run2["template_name"],
+                "template_fields": template_fields,
+                "source_docs": source_docs_from_db,  # từ DB
+                "source_context": "", "field_results": [],
+                "write_progress": 0, "review_submitted": False,
+                "human_edits": {}, "export_mode": "clean",
+                "exported_bytes": None, "current_step": 2,
+                "status": "awaiting_extract", "error": None, "messages": [],
+            }
+            await compiled_graph.aupdate_state(config, rebuilt, as_node="extract_sources")
+        else:
+            # Checkpoint còn nhưng source_docs có thể rỗng → inject lại từ DB
+            await compiled_graph.aupdate_state(
+                config,
+                {"source_docs": source_docs_from_db}
+            )
+            print(f"[Pipeline] Injected {len(source_docs_from_db)} source docs from DB")
+
         final_state = await compiled_graph.ainvoke(None, config=config)
         async with AsyncSessionLocal() as db:
             run_row = await db.execute(text(

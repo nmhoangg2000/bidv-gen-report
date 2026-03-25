@@ -92,8 +92,9 @@ async def upload_template(
     for order, f in enumerate(raw_fields):
         await db.execute(text("""
             INSERT INTO template_fields
-                (id, template_id, field_key, para_idx, placeholder, context, field_order)
-            VALUES (:id, :tid, :key, :pidx, :ph, :ctx, :order)
+                (id, template_id, field_key, para_idx, placeholder, context,
+                 field_type, fill_mode, field_order)
+            VALUES (:id, :tid, :key, :pidx, :ph, :ctx, :ftype, :fmode, :order)
         """), {
             "id":    str(uuid.uuid4()),
             "tid":   tmpl_id,
@@ -101,6 +102,8 @@ async def upload_template(
             "pidx":  f["para_idx"],
             "ph":    f["placeholder"],
             "ctx":   f["context"],
+            "ftype": f.get("field_type", "sentence"),
+            "fmode": f.get("fill_mode", "inline"),
             "order": order,
         })
 
@@ -128,6 +131,75 @@ async def list_templates(db: AsyncSession = Depends(get_db)):
 @router.get("/{template_id}", response_model=TemplateOut)
 async def get_template(template_id: str, db: AsyncSession = Depends(get_db)):
     return await _get_template_out(template_id, db)
+
+
+@router.get("/{template_id}/preview-html")
+async def preview_template_html(template_id: str, db: AsyncSession = Depends(get_db)):
+    """Convert template .docx → HTML để xem trước trong browser."""
+    import subprocess, tempfile, os as _os
+    row = await db.execute(text(
+        "SELECT name, filename, file_data FROM templates WHERE id = :id"
+    ), {"id": template_id})
+    r = row.mappings().first()
+    if not r:
+        raise HTTPException(404)
+
+    docx_bytes = bytes(r["file_data"])
+
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx_path = _os.path.join(tmp, "template.docx")
+            html_path = _os.path.join(tmp, "template.html")
+            open(docx_path, "wb").write(docx_bytes)
+
+            result = subprocess.run(
+                ["pandoc", docx_path, "-o", html_path,
+                 "--standalone", "--embed-resources",
+                 "--metadata", f"title={r['name']}",
+                 "--css=/dev/null"],
+                capture_output=True, timeout=30
+            )
+
+            if result.returncode == 0:
+                html = open(html_path, "r", encoding="utf-8").read()
+            else:
+                raise FileNotFoundError("pandoc failed")
+
+            # Inject A4 styling + highlight vàng dễ thấy
+            inject_css = """<style>
+body{margin:0;padding:32px 48px;font-family:'Times New Roman',serif;
+  font-size:13pt;line-height:1.8;color:#111;background:#fff}
+p{margin:.5em 0}
+table{border-collapse:collapse;width:100%}
+td,th{border:1px solid #ccc;padding:6px 10px;font-size:12pt}
+mark{background:#fff59d;padding:0 2px;border-radius:2px}
+</style>"""
+            html = html.replace("</head>", inject_css + "</head>")
+
+    except FileNotFoundError:
+        # Fallback: render fields list nếu không có pandoc
+        fields_row = await db.execute(text(
+            "SELECT placeholder, context, fill_mode FROM template_fields WHERE template_id=:id ORDER BY field_order"
+        ), {"id": template_id})
+        fields = [dict(f) for f in fields_row.mappings()]
+        items = "".join(f"""
+            <div style="margin:10px 0;padding:8px 12px;border-left:3px solid #f59e0b;background:#fffbeb;border-radius:4px">
+              <div style="font-size:9px;color:#92400e;font-weight:700;margin-bottom:4px">
+                {'BLOCK ↓' if f.get('fill_mode')=='block' else 'INLINE ←'}
+              </div>
+              <mark style="background:#fef08a;padding:1px 4px;border-radius:2px;font-size:12pt">{f['placeholder']}</mark>
+              <div style="font-size:10px;color:#6b7280;margin-top:4px">{f['context'][:120]}...</div>
+            </div>""" for f in fields)
+        html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>body{{margin:0;padding:32px 48px;font-family:'Times New Roman',serif;font-size:13pt;line-height:1.8;color:#111}}</style>
+</head><body>
+<h2 style="font-size:16pt;margin-bottom:4px">{r['name']}</h2>
+<p style="font-size:10pt;color:#6b7280">Danh sách {len(fields)} trường cần điền:</p>
+{items}
+</body></html>"""
+
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
 
 
 @router.get("/{template_id}/download")
