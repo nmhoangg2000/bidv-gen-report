@@ -142,20 +142,30 @@ def _parse_highlights(doc_xml_path: str) -> List[Dict]:
             (r.find(f"{{{NS_W}}}t").text or "")
             for r in runs if r.find(f"{{{NS_W}}}t") is not None
         )
-        highlights = []
+
+        # Thu thập highlights — vàng = replace, bất kỳ màu khác = insert_below
+        yellow_texts = []
+        green_texts  = []
         for run in runs:
             rpr = run.find(f"{{{NS_W}}}rPr")
             t   = run.find(f"{{{NS_W}}}t")
             if rpr is not None and t is not None and t.text:
-                hl = rpr.find(f"{{{NS_W}}}highlight")
-                if hl is not None and hl.get(f"{{{NS_W}}}val") == "yellow":
-                    highlights.append(t.text)
+                hl  = rpr.find(f"{{{NS_W}}}highlight")
+                val = hl.get(f"{{{NS_W}}}val") if hl is not None else None
+                if val == "yellow":
+                    yellow_texts.append(t.text)
+                elif val is not None:   # bất kỳ màu nào khác vàng → insert_below
+                    green_texts.append(t.text)
+
+        highlights = yellow_texts or green_texts
         if not highlights:
             continue
 
+        # field_mode: vàng = replace, xanh = insert_below
+        field_mode  = "replace" if yellow_texts else "insert_below"
         placeholder = "".join(highlights)
 
-        # Context: lấy đoạn trước + hiện tại + sau
+        # Context: đoạn trước + hiện tại + sau
         prev_text = ""
         if para_idx > 0:
             prev_runs = list(all_paras[para_idx-1].iter(f"{{{NS_W}}}r"))
@@ -172,7 +182,6 @@ def _parse_highlights(doc_xml_path: str) -> List[Dict]:
             )
         rich_context = f"{prev_text[:100]} | {full_text[:200]} | {next_text[:100]}".strip()
 
-        # Phân loại field
         field_type = _classify_field(placeholder, rich_context)
 
         fields.append({
@@ -182,9 +191,9 @@ def _parse_highlights(doc_xml_path: str) -> List[Dict]:
             "context":      rich_context[:400],
             "field_type":   field_type,
             "type_hint":    _FIELD_TYPE_HINTS[field_type],
+            "field_mode":   field_mode,   # "replace" | "insert_below"
         })
     return fields
-
 
 
 # ─── Fill and export ──────────────────────────────────────────────────────────
@@ -192,7 +201,7 @@ def _parse_highlights(doc_xml_path: str) -> List[Dict]:
 def fill_and_export(
     docx_bytes:   bytes,
     field_values: List[Dict],
-    apply_colors: bool = False,  # True = giữ highlight vàng, False = xóa highlight
+    apply_colors: bool = False,
 ) -> bytes:
     with tempfile.TemporaryDirectory() as tmp:
         docx_path  = os.path.join(tmp, "template.docx")
@@ -222,15 +231,47 @@ def fill_and_export(
         return open(out_path, "rb").read()
 
 
+def _build_new_para(value: str, ref_rpr: ET.Element) -> ET.Element:
+    """Tạo paragraph mới với text và copy rPr từ run tham chiếu (bỏ highlight)."""
+    import copy
+    new_p = ET.Element(f"{{{NS_W}}}p")
+    for i, line in enumerate(value.split('\n')):
+        if i > 0:
+            br_r = ET.SubElement(new_p, f"{{{NS_W}}}r")
+            ET.SubElement(br_r, f"{{{NS_W}}}br")
+        new_r  = ET.SubElement(new_p, f"{{{NS_W}}}r")
+        if ref_rpr is not None:
+            new_rpr = copy.deepcopy(ref_rpr)
+            # Xóa highlight khỏi rPr mới
+            hl = new_rpr.find(f"{{{NS_W}}}highlight")
+            if hl is not None:
+                new_rpr.remove(hl)
+            new_r.append(new_rpr)
+        t_el = ET.SubElement(new_r, f"{{{NS_W}}}t")
+        t_el.text = line
+        if line.startswith(' ') or line.endswith(' '):
+            t_el.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
+    return new_p
+
+
+def _find_parent(tree: ET.Element, child: ET.Element):
+    """Tìm parent element của child."""
+    for parent in tree.iter():
+        if child in list(parent):
+            return parent
+    return None
+
+
 def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool = False) -> bytes:
     """
-    Thay thế yellow highlight bằng giá trị AI.
-    keep_highlight=True  → giữ highlight vàng trên nội dung AI (mode "tracked")
-    keep_highlight=False → xóa highlight, file sạch (mode "clean")
+    Xử lý fields theo field_mode:
+    - replace      (🟡 vàng): ghi đè text tại chỗ
+    - insert_below (🟢 xanh): giữ nguyên dòng tiêu đề, chèn paragraph mới bên dưới
     """
-    val_map = {fv["field_key"]: fv.get("final_value", "") for fv in field_values}
+    val_map  = {fv["field_key"]: fv.get("final_value", "") for fv in field_values}
+    mode_map = {fv["field_key"]: fv.get("field_mode", "replace") for fv in field_values}
 
-    xml_str      = raw.decode("utf-8")
+    xml_str       = raw.decode("utf-8")
     root_open_end = xml_str.find('>') + 1
     root_tag_end  = xml_str.find('>', root_open_end) + 1
     orig_hdr      = xml_str[:root_tag_end]
@@ -238,44 +279,69 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
     tree  = ET.fromstring(raw)
     paras = list(tree.iter(f"{{{NS_W}}}p"))
 
+    # insert_below cần chèn paragraph → thu thập trước, thực hiện sau
+    # để không làm lệch index khi iterate
+    inserts = []  # list of (parent, para_el, new_para_el)
+
     for para_idx, para in enumerate(paras):
         key   = f"para_{para_idx}"
         value = val_map.get(key)
         if value is None:
             continue
 
-        # Thu thập tất cả highlighted runs
+        mode = mode_map.get(key, "replace")
+
+        # Thu thập highlighted runs — vàng = replace, màu khác = insert_below
         h_runs = []
         for run in para.iter(f"{{{NS_W}}}r"):
             rpr = run.find(f"{{{NS_W}}}rPr")
             t   = run.find(f"{{{NS_W}}}t")
             if rpr is not None and t is not None and t.text:
-                hl = rpr.find(f"{{{NS_W}}}highlight")
-                if hl is not None and hl.get(f"{{{NS_W}}}val") == "yellow":
+                hl     = rpr.find(f"{{{NS_W}}}highlight")
+                val_hl = hl.get(f"{{{NS_W}}}val") if hl is not None else None
+                if val_hl is not None:   # bất kỳ màu highlight nào
                     h_runs.append((t, rpr, hl))
 
         if not h_runs:
             continue
 
-        # Run đầu tiên: đặt text = giá trị AI
         first_t, first_rpr, first_hl = h_runs[0]
-        first_t.text = value
-        if value.startswith(' ') or value.endswith(' '):
-            first_t.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
 
-        # Xử lý highlight: giữ hay xóa
-        if not keep_highlight:
-            # Clean mode: xóa highlight khỏi tất cả runs
-            first_rpr.remove(first_hl)
-            for t, rpr, hl in h_runs[1:]:
-                t.text = ""
-                rpr.remove(hl)
-        else:
-            # Tracked mode: giữ highlight vàng trên run đầu, xóa text các run còn lại
-            for t, rpr, hl in h_runs[1:]:
-                t.text = ""
+        if mode == "replace":
+            # Ghi đè text, xử lý highlight
+            first_t.text = value
+            if value.startswith(' ') or value.endswith(' '):
+                first_t.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
 
-    # Serialize — restore header gốc để giữ XML declaration + namespace declarations
+            if not keep_highlight:
+                first_rpr.remove(first_hl)
+                for t, rpr, hl in h_runs[1:]:
+                    t.text = ""
+                    rpr.remove(hl)
+            else:
+                for t, rpr, hl in h_runs[1:]:
+                    t.text = ""
+
+        elif mode == "insert_below":
+            # Giữ nguyên text tiêu đề, xóa highlight khỏi dòng tiêu đề
+            for t, rpr, hl in h_runs:
+                rpr.remove(hl)   # bỏ highlight xanh trên dòng tiêu đề
+
+            # Tạo paragraph mới với nội dung AI
+            new_p  = _build_new_para(value, first_rpr)
+            parent = _find_parent(tree, para)
+            if parent is not None:
+                inserts.append((parent, para, new_p))
+
+    # Thực hiện inserts (sau khi xong loop để không lệch index)
+    for parent, ref_para, new_p in inserts:
+        children = list(parent)
+        for i, child in enumerate(children):
+            if child is ref_para:
+                parent.insert(i + 1, new_p)
+                break
+
+    # Serialize
     new_xml = ET.tostring(tree, encoding="unicode", xml_declaration=False)
     new_end = new_xml.find('>') + 1
     new_xml = orig_hdr + new_xml[new_end:]

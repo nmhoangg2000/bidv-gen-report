@@ -31,6 +31,7 @@ class FieldOut(BaseModel):
     placeholder: str
     context:     str
     field_order: int
+    field_mode:  str = "replace"
 
 
 class TemplateOut(BaseModel):
@@ -93,7 +94,7 @@ async def upload_template(
         await db.execute(text("""
             INSERT INTO template_fields
                 (id, template_id, field_key, para_idx, placeholder, context,
-                 field_type, fill_mode, field_order)
+                 field_type, field_mode, field_order)
             VALUES (:id, :tid, :key, :pidx, :ph, :ctx, :ftype, :fmode, :order)
         """), {
             "id":    str(uuid.uuid4()),
@@ -103,7 +104,7 @@ async def upload_template(
             "ph":    f["placeholder"],
             "ctx":   f["context"],
             "ftype": f.get("field_type", "sentence"),
-            "fmode": f.get("fill_mode", "inline"),
+            "fmode": f.get("field_mode", "replace"),
             "order": order,
         })
 
@@ -179,13 +180,13 @@ mark{background:#fff59d;padding:0 2px;border-radius:2px}
     except FileNotFoundError:
         # Fallback: render fields list nếu không có pandoc
         fields_row = await db.execute(text(
-            "SELECT placeholder, context, fill_mode FROM template_fields WHERE template_id=:id ORDER BY field_order"
+            "SELECT placeholder, context, field_mode FROM template_fields WHERE template_id=:id ORDER BY field_order"
         ), {"id": template_id})
         fields = [dict(f) for f in fields_row.mappings()]
         items = "".join(f"""
             <div style="margin:10px 0;padding:8px 12px;border-left:3px solid #f59e0b;background:#fffbeb;border-radius:4px">
               <div style="font-size:9px;color:#92400e;font-weight:700;margin-bottom:4px">
-                {'BLOCK ↓' if f.get('fill_mode')=='block' else 'INLINE ←'}
+                {'🟢 Chèn bên dưới' if f.get('field_mode')=='insert_below' else '🟡 Thay thế'}
               </div>
               <mark style="background:#fef08a;padding:1px 4px;border-radius:2px;font-size:12pt">{f['placeholder']}</mark>
               <div style="font-size:10px;color:#6b7280;margin-top:4px">{f['context'][:120]}...</div>
@@ -271,7 +272,8 @@ async def _get_template_out(template_id: str, db: AsyncSession) -> TemplateOut:
 
 async def _get_fields(template_id: str, db: AsyncSession) -> List[FieldOut]:
     rows = await db.execute(text("""
-        SELECT id::text, field_key, para_idx, placeholder, context, field_order
+        SELECT id::text, field_key, para_idx, placeholder, context, field_order,
+               COALESCE(field_mode,'replace') as field_mode
         FROM template_fields WHERE template_id = :tid ORDER BY field_order
     """), {"tid": template_id})
     return [FieldOut(**dict(r)) for r in rows.mappings()]

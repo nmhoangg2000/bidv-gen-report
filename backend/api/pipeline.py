@@ -50,6 +50,7 @@ class FieldResultOut(BaseModel):
     reason:      str
     approved:    bool
     human_edited: bool = False
+    field_mode:  str = "replace"   # replace | insert_below
 
 
 class RunOut(BaseModel):
@@ -80,7 +81,8 @@ async def start_pipeline(
 
     # Load template fields
     fields_row = await db.execute(text("""
-        SELECT field_key as key, para_idx, placeholder, context, field_order
+        SELECT field_key as key, para_idx, placeholder, context, field_order,
+               COALESCE(field_mode,'replace') as field_mode
         FROM template_fields WHERE template_id = :tid ORDER BY field_order
     """), {"tid": req.template_id})
     fields = [dict(r) for r in fields_row.mappings()]
@@ -188,7 +190,8 @@ async def get_results(run_id: str, db: AsyncSession = Depends(get_db)):
     rows = await db.execute(text("""
         SELECT fr.field_key, tf.para_idx, tf.placeholder, tf.context,
                fr.ai_value, fr.final_value, fr.confidence, fr.reason,
-               fr.approved, fr.human_edited
+               fr.approved, fr.human_edited,
+               COALESCE(tf.field_mode,'replace') as field_mode
         FROM field_results fr
         JOIN template_fields tf ON tf.id = fr.field_id
         WHERE fr.run_id = :rid
@@ -196,8 +199,7 @@ async def get_results(run_id: str, db: AsyncSession = Depends(get_db)):
     """), {"rid": run_id})
     results = [dict(r) for r in rows.mappings()]
     if not results:
-        # Try to get from LangGraph checkpointer
-        results = _get_results_from_graph(run_id)
+        return []
     return [FieldResultOut(**r) for r in results]
 
 
@@ -359,7 +361,8 @@ async def export_docx(
 
     # Get approved field results
     results_row = await db.execute(text("""
-        SELECT fr.field_key, tf.para_idx, fr.final_value, fr.confidence
+        SELECT fr.field_key, tf.para_idx, fr.final_value, fr.confidence,
+               COALESCE(tf.field_mode,'replace') as field_mode
         FROM field_results fr
         JOIN template_fields tf ON tf.id = fr.field_id
         WHERE fr.run_id = :rid
@@ -430,7 +433,8 @@ async def preview_html(
         raise HTTPException(404, "Template not found")
 
     results_row = await db.execute(text("""
-        SELECT fr.field_key, tf.para_idx, fr.final_value, fr.confidence
+        SELECT fr.field_key, tf.para_idx, fr.final_value, fr.confidence,
+               COALESCE(tf.field_mode,'replace') as field_mode
         FROM field_results fr
         JOIN template_fields tf ON tf.id = fr.field_id
         WHERE fr.run_id = :rid
@@ -603,7 +607,8 @@ async def _resume_extract(run_id: str):
                 run2 = run_row2.mappings().first()
 
                 fields_row = await db.execute(text("""
-                    SELECT field_key as key, para_idx, placeholder, context, field_order
+                    SELECT field_key as key, para_idx, placeholder, context, field_order,
+                           COALESCE(field_mode,'replace') as field_mode
                     FROM template_fields WHERE template_id=:tid ORDER BY field_order
                 """), {"tid": tid})
                 template_fields = [dict(f) for f in fields_row.mappings()]
