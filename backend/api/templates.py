@@ -218,6 +218,23 @@ async def download_template(template_id: str, db: AsyncSession = Depends(get_db)
     )
 
 
+@router.delete("")
+async def delete_all_templates(db: AsyncSession = Depends(get_db)):
+    """Xóa toàn bộ templates và dữ liệu liên quan."""
+    # Lấy tất cả run_ids
+    runs = await db.execute(text("SELECT id FROM pipeline_runs"))
+    run_ids = [str(r["id"]) for r in runs.mappings()]
+    for rid in run_ids:
+        await db.execute(text("DELETE FROM field_results WHERE run_id = :rid"), {"rid": rid})
+        await db.execute(text("DELETE FROM run_source_documents WHERE run_id = :rid"), {"rid": rid})
+        await db.execute(text("DELETE FROM exported_documents WHERE run_id = :rid"), {"rid": rid})
+    await db.execute(text("DELETE FROM pipeline_runs"))
+    await db.execute(text("DELETE FROM template_fields"))
+    await db.execute(text("DELETE FROM templates"))
+    await db.commit()
+    return {"cleared": True}
+
+
 @router.delete("/{template_id}")
 async def delete_template(template_id: str, db: AsyncSession = Depends(get_db)):
     # Lấy danh sách run_ids liên quan

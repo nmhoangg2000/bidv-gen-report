@@ -104,23 +104,41 @@ _FIELD_TYPE_HINTS = {
 def _classify_field(placeholder: str, context: str) -> str:
     """Phân loại field dựa trên placeholder text và ngữ cảnh."""
     ph     = placeholder.strip()
+    ctx    = context.strip()
     ph_len = len(ph)
 
     # Với placeholder DÀI (> 60 ký tự) → ưu tiên phân loại theo độ dài
     if ph_len > 60:
         return "paragraph" if ph_len > 200 else "sentence"
 
-    # Ngày tháng — chỉ check khi placeholder ngắn
+    # ── Ngày tháng: check placeholder trước ──────────────────────────────────
     for pat in _DATE_PATTERNS:
         if pat.search(ph):
             return "date"
 
-    # Số liệu
+    # ── Ngày tháng: check context nếu placeholder là dấu chấm lửng / mờ ────
+    # Các placeholder kiểu "Năm ……", "Quý …/202…", "……", "Thời gian: …"
+    _FUZZY_DATE = _re.compile(
+        r'\b(ngày|tháng|năm|quý|kỳ|thời\s*gian|giai\s*đoạn|dd|mm|yyyy)\b', _re.I
+    )
+    if _FUZZY_DATE.search(ph) or _re.fullmatch(r'[.\u2026\s/\-–—]+', ph):
+        # Placeholder là toàn dấu lửng/gạch → xem context có ngày không
+        for pat in _DATE_PATTERNS:
+            if pat.search(ctx):
+                return "date"
+        if _FUZZY_DATE.search(ctx):
+            return "date"
+
+    # Placeholder có từ khoá thời gian nhưng chưa match pattern cụ thể
+    if _FUZZY_DATE.search(ph):
+        return "date"
+
+    # ── Số liệu ───────────────────────────────────────────────────────────────
     for pat in _NUMBER_PATTERNS:
         if pat.search(ph):
             return "number"
 
-    # Độ dài
+    # ── Độ dài ────────────────────────────────────────────────────────────────
     if ph_len <= 25:
         return "short"
     elif ph_len <= 200:
@@ -372,8 +390,49 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
                 capture_output=True
             )
             return r.stdout.decode("utf-8", errors="replace")[:60000]
+        elif ext in (".xlsx", ".xls"):
+            return _extract_text_from_excel(file_bytes, ext)
         else:
             with open(tmp_path, errors="replace") as f:
                 return f.read()[:60000]
     finally:
         os.unlink(tmp_path)
+
+
+def _extract_text_from_excel(file_bytes: bytes, ext: str) -> str:
+    """
+    Đọc Excel → text dạng bảng, mỗi sheet là 1 section.
+    Dùng openpyxl (xlsx) hoặc xlrd (xls).
+    """
+    import io
+    lines = []
+    try:
+        if ext == ".xlsx":
+            import openpyxl
+            wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+            for sheet_name in wb.sheetnames:
+                ws = wb[sheet_name]
+                lines.append(f"=== Sheet: {sheet_name} ===")
+                for row in ws.iter_rows():
+                    cells = []
+                    for cell in row:
+                        val = cell.value
+                        if val is not None:
+                            cells.append(str(val).strip())
+                    if any(cells):  # bỏ dòng trống hoàn toàn
+                        lines.append(" | ".join(cells))
+        elif ext == ".xls":
+            import xlrd
+            wb = xlrd.open_workbook(file_contents=file_bytes)
+            for sheet_name in wb.sheet_names():
+                ws = wb.sheet_by_name(sheet_name)
+                lines.append(f"=== Sheet: {sheet_name} ===")
+                for i in range(ws.nrows):
+                    cells = [str(ws.cell_value(i, j)).strip()
+                             for j in range(ws.ncols)]
+                    if any(cells):
+                        lines.append(" | ".join(cells))
+    except Exception as e:
+        return f"(Lỗi đọc Excel: {e})"
+
+    return "\n".join(lines)[:60000]

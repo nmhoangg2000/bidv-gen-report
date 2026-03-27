@@ -21,7 +21,7 @@ from utils.docx_parser import extract_text_from_file
 
 router = APIRouter()
 
-ALLOWED_TYPES = {".pdf", ".docx", ".doc", ".txt"}
+ALLOWED_TYPES = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls"}
 
 
 class SourceDocOut(BaseModel):
@@ -135,6 +135,15 @@ async def get_source(doc_id: str, db: AsyncSession = Depends(get_db)):
     if not r:
         raise HTTPException(404)
     return dict(r)
+
+
+@router.delete("")
+async def delete_all_sources(db: AsyncSession = Depends(get_db)):
+    """Xóa toàn bộ tài liệu nguồn."""
+    await db.execute(text("DELETE FROM run_source_documents"))
+    await db.execute(text("DELETE FROM source_documents"))
+    await db.commit()
+    return {"cleared": True}
 
 
 @router.delete("/{doc_id}")

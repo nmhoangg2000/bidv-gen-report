@@ -82,7 +82,8 @@ async def start_pipeline(
     # Load template fields
     fields_row = await db.execute(text("""
         SELECT field_key as key, para_idx, placeholder, context, field_order,
-               COALESCE(field_mode,'replace') as field_mode
+               COALESCE(field_mode,'replace') as field_mode,
+               COALESCE(field_type,'sentence') as field_type
         FROM template_fields WHERE template_id = :tid ORDER BY field_order
     """), {"tid": req.template_id})
     fields = [dict(r) for r in fields_row.mappings()]
@@ -608,7 +609,8 @@ async def _resume_extract(run_id: str):
 
                 fields_row = await db.execute(text("""
                     SELECT field_key as key, para_idx, placeholder, context, field_order,
-                           COALESCE(field_mode,'replace') as field_mode
+                           COALESCE(field_mode,'replace') as field_mode,
+                           COALESCE(field_type,'sentence') as field_type
                     FROM template_fields WHERE template_id=:tid ORDER BY field_order
                 """), {"tid": tid})
                 template_fields = [dict(f) for f in fields_row.mappings()]

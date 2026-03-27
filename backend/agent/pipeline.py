@@ -166,32 +166,80 @@ async def node_write_fields(state: PipelineState) -> PipelineState:
 NGÀY HIỆN TẠI: {today_str} ({month_year}, {quarter})
 
 NGUYÊN TẮC VÀNG — KHÔNG ĐƯỢC VI PHẠM:
-1. CHỈ viết những gì có bằng chứng trong tài liệu nguồn — không suy đoán, không bịa số liệu
-2. Trích dẫn CHÍNH XÁC: số, %, ngày tháng, tên văn bản phải đúng với tài liệu nguồn
-3. Mỗi câu phải có ít nhất 1 thông tin định lượng (số, %, tỷ đồng) hoặc định danh cụ thể
-4. KHÔNG dùng: "đã triển khai tốt", "kết quả khả quan", "tiếp tục phát huy" — quá chung chung
+1. CHỈ dùng số liệu, tên, ngày tháng từ tài liệu nguồn — không bịa
+2. TUYỆT ĐỐI KHÔNG sao chép câu chữ từ tài liệu nguồn — đọc hiểu rồi viết lại hoàn toàn
+3. Mỗi câu phải có ít nhất 1 thông tin định lượng hoặc định danh cụ thể
+4. KHÔNG dùng: "đã triển khai tốt", "kết quả khả quan", "tiếp tục phát huy"
 5. Output PHẢI dài ít nhất bằng placeholder gốc
 
+CÁCH VIẾT — TỔng HỢP, KHÔNG TRÍCH XUẤT:
+✗ SAI (copy ý): Tài liệu viết "đã xác thực 9,8 triệu KHCN" → Output viết "đã xác thực 9,8 triệu KHCN"
+✓ ĐÚNG (tổng hợp): Tài liệu viết "đã xác thực 9,8 triệu KHCN" → Output viết "BIDV hoàn thành mục tiêu xác thực sinh trắc học với 9,8 triệu khách hàng cá nhân, tương đương 94% tổng số KHCN hiện hữu"
+
 VĂN PHONG CHUẨN BIDV:
-- Chủ ngữ: "BIDV", "Ngân hàng" (không dùng "chúng tôi", "đơn vị")
+- Chủ ngữ: "BIDV", "Ngân hàng" (không dùng "chúng tôi")
 - Đơn vị: tỷ đồng, %, triệu người, lệnh/ngày
 - Thời gian: "Quý I/2026", "tháng 3/2026", "ngày 12/05/2025"
 - Tên viết hoa đúng: BIDV, NHNN, CSDLQG, VNeID, NQ57, Bộ Công an
 
-MẪU CHUẨN:
-✗ "BIDV đã hoàn thành nhiều nhiệm vụ quan trọng trong năm 2025."
-✓ "Trong năm 2025, BIDV ban hành Nghị quyết 488/NQ-BIDV ngày 12/05/2025, xác thực sinh trắc học cho 9,8 triệu KHCN qua CCCD gắn chip và VNeID, đạt kỷ lục 20 triệu giao dịch/ngày vào 20/10/2025, hoàn thành Core Banking Myanmar với thời gian kỷ lục."
-
 Trả lời CHỈ bằng JSON hợp lệ."""
+
+    async def _extract_data_points(placeholder: str, ctx: str) -> str:
+        """
+        Bước 1: Trích xuất các điểm dữ liệu thô (số, tên, ngày) từ tài liệu nguồn.
+        Chỉ lấy dữ liệu, không lấy câu văn — ngăn AI copy câu gốc.
+        """
+        extract_prompt = f"""Từ tài liệu nguồn bên dưới, trích xuất các ĐIỂM DỮ LIỆU THÔ liên quan đến chủ đề: "{placeholder}"
+
+Chỉ liệt kê dữ liệu, KHÔNG viết thành câu:
+- Các con số, %, tỷ đồng
+- Tên dự án, văn bản, nghị quyết
+- Ngày tháng cụ thể
+- Tên tổ chức, đơn vị
+
+TÀI LIỆU NGUỒN:
+{ctx[:8000]}
+
+Trả về JSON:
+{{"data_points": ["điểm dữ liệu 1", "điểm dữ liệu 2", ...]}}"""
+
+        try:
+            resp = await client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": extract_prompt}],
+                max_tokens=600,
+                temperature=0.0,
+                response_format={"type": "json_object"},
+            )
+            result = json.loads(resp.choices[0].message.content.strip())
+            points = result.get("data_points", [])
+            return "\n".join(f"• {p}" for p in points) if points else ctx[:3000]
+        except Exception:
+            return ctx[:3000]  # fallback về context gốc nếu extract lỗi
 
     async def call_one(field) -> FieldResult:
         placeholder = field.get("placeholder", "")
         ph_len      = len(placeholder)
         field_type  = field.get("field_type", "sentence")
-        type_hint   = field.get("type_hint", "")
+        # Nếu field không có type_hint (load từ DB không lưu type_hint)
+        # → generate lại từ field_type
+        from utils.docx_parser import _FIELD_TYPE_HINTS
+        type_hint   = field.get("type_hint") or _FIELD_TYPE_HINTS.get(field_type, "")
 
         # Trích xuất context liên quan nhất cho field này
         relevant_ctx = extract_relevant_context(placeholder, full_ctx, max_chars=10000)
+
+        # Bước 1 — Extract data points (chỉ với field dài để tiết kiệm API call)
+        if field_type in ("paragraph", "sentence") and len(relevant_ctx) > 500:
+            async with semaphore:
+                data_points = await _extract_data_points(placeholder, relevant_ctx)
+            source_section = f"""=== DỮ LIỆU THÔ ĐÃ TRÍCH XUẤT TỪ TÀI LIỆU NGUỒN ===
+(Chỉ dùng các điểm dữ liệu này, VIẾT LẠI thành câu hoàn chỉnh — KHÔNG copy câu gốc)
+{data_points}"""
+        else:
+            # Field ngắn (ngày, số): dùng thẳng context
+            source_section = f"""=== TÀI LIỆU NGUỒN ===
+{relevant_ctx}"""
 
         user_msg = f"""Điền nội dung vào ô còn trống trong báo cáo BIDV.
 
@@ -202,19 +250,19 @@ Trả lời CHỈ bằng JSON hợp lệ."""
 Placeholder ({ph_len} ký tự): "{placeholder}"
 Ngữ cảnh xung quanh: {field['context']}
 
-=== TÀI LIỆU NGUỒN ===
-{relevant_ctx}
+{source_section}
 
 === YÊU CẦU ===
 - Độ dài TỐI THIỂU: {max(ph_len, 80)} ký tự
-- Liệt kê TẤT CẢ số liệu liên quan từ tài liệu nguồn
-- KHÔNG viết chung chung — phải có số hoặc tên cụ thể
+- VIẾT LẠI bằng ngôn ngữ của mình — không copy câu gốc từ tài liệu
+- Dùng cấu trúc câu đa dạng, chủ ngữ vị ngữ khác với tài liệu nguồn
+- Giữ nguyên các số liệu, tên, ngày tháng (những thứ này phải chính xác)
 
 Trả về JSON:
 {{
-  "value": "nội dung điền theo đúng LOẠI TRƯỜNG và văn phong hành chính BIDV",
+  "value": "nội dung viết lại hoàn toàn theo văn phong hành chính BIDV",
   "confidence": "high|mid|low",
-  "reason": "lấy từ đâu hoặc tự generate"
+  "reason": "dữ liệu lấy từ đâu"
 }}"""
 
         if ph_len < 50:
@@ -225,6 +273,9 @@ Trả về JSON:
             max_tok = 3500
         else:
             max_tok = 4096
+
+        # Temperature cao hơn cho paragraph để văn phong đa dạng hơn
+        temperature = 0.4 if field_type == "paragraph" else 0.2
 
         async with semaphore:
             parsed   = None
@@ -238,7 +289,7 @@ Trả về JSON:
                             {"role": "user",   "content": user_msg},
                         ],
                         max_tokens=max_tok,
-                        temperature=0.2,
+                        temperature=temperature,
                         response_format={"type": "json_object"},
                     )
                     parsed = json.loads(response.choices[0].message.content.strip())
@@ -285,7 +336,113 @@ Trả về JSON:
     }
 
 
-# ─── Node 4: human_review ─────────────────────────────────────────────────────
+# ─── Node 3b: qc_fields ──────────────────────────────────────────────────────
+
+async def node_qc_fields(state: PipelineState) -> PipelineState:
+    """
+    Agent QC: đọc lại từng nội dung AI viết, đối chiếu với tài liệu nguồn,
+    gắn cờ chỗ nào không có bằng chứng hoặc có thể bị bịa.
+    """
+    import asyncio, re as _re
+
+    client    = get_client()
+    results   = state.get("field_results", [])
+    context   = state.get("source_context", "")
+    model     = os.getenv("OPENAI_MODEL", "gpt-4o")
+    semaphore = asyncio.Semaphore(int(os.getenv("OPENAI_CONCURRENCY", "2")))
+
+    if not context or context.startswith("(Không có tài liệu"):
+        # Không có tài liệu nguồn → QC không thể kiểm tra, đánh dấu tất cả warning
+        updated = []
+        for r in results:
+            updated.append({**r,
+                "qc_status": "warning",
+                "qc_note":   "Không có tài liệu nguồn để đối chiếu — cần kiểm tra thủ công"
+            })
+        return {**state, "field_results": updated,
+                "messages": [HumanMessage(content="[QC] No source docs — all flagged warning.")]}
+
+    system_qc = """Bạn là chuyên gia kiểm định chất lượng nội dung báo cáo ngân hàng BIDV.
+Nhiệm vụ: đối chiếu nội dung AI viết với tài liệu nguồn, phát hiện chỗ không có căn cứ.
+
+Trả lời CHỈ bằng JSON hợp lệ."""
+
+    async def qc_one(r: dict) -> dict:
+        ai_value = r.get("ai_value", "")
+        if not ai_value.strip():
+            return {**r, "qc_status": "fail", "qc_note": "AI không tạo được nội dung"}
+
+        # Tìm context liên quan cho field này
+        ph       = r.get("placeholder", "")
+        keywords = set(_re.findall(r'[a-zA-ZÀ-ỹ]{4,}', ph.lower()))
+        paras    = [p.strip() for p in _re.split(r'\n{2,}', context) if p.strip()]
+        scored   = sorted(paras, key=lambda p: sum(1 for kw in keywords if kw in p.lower()), reverse=True)
+        src_snippet = "\n\n".join(scored[:8])[:6000]
+
+        user_qc = f"""Kiểm tra nội dung AI viết có căn cứ từ tài liệu nguồn không.
+
+NỘI DUNG AI VIẾT:
+"{ai_value}"
+
+TÀI LIỆU NGUỒN (đoạn liên quan):
+{src_snippet}
+
+Yêu cầu kiểm tra:
+1. Các con số, %, tỷ đồng trong nội dung AI — có xuất hiện trong tài liệu nguồn không?
+2. Các tên dự án, văn bản, ngày tháng — có khớp với tài liệu nguồn không?
+3. Có câu nào AI tự bịa không có căn cứ không?
+
+Trả về JSON:
+{{
+  "status": "ok|warning|fail",
+  "note": "giải thích ngắn gọn bằng tiếng Việt",
+  "fabricated": ["liệt kê các cụm từ/số liệu nghi bịa, hoặc []"]
+}}
+
+Quy tắc status:
+- ok      : tất cả số liệu đều có trong tài liệu nguồn
+- warning : một số thông tin không tìm thấy rõ ràng, cần người dùng kiểm tra
+- fail    : có số liệu/thông tin rõ ràng không có trong tài liệu nguồn (bịa)"""
+
+        async with semaphore:
+            try:
+                resp = await client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_qc},
+                        {"role": "user",   "content": user_qc},
+                    ],
+                    max_tokens=400,
+                    temperature=0.1,
+                    response_format={"type": "json_object"},
+                )
+                qc = json.loads(resp.choices[0].message.content.strip())
+            except Exception as e:
+                qc = {"status": "warning", "note": f"QC lỗi: {e}", "fabricated": []}
+
+        fabricated = qc.get("fabricated", [])
+        note = qc.get("note", "")
+        if fabricated:
+            note += f" | Nghi bịa: {', '.join(fabricated)}"
+
+        return {**r, "qc_status": qc.get("status", "warning"), "qc_note": note}
+
+    qc_results = list(await asyncio.gather(*[qc_one(r) for r in results]))
+
+    n_ok   = sum(1 for r in qc_results if r["qc_status"] == "ok")
+    n_warn = sum(1 for r in qc_results if r["qc_status"] == "warning")
+    n_fail = sum(1 for r in qc_results if r["qc_status"] == "fail")
+
+    return {
+        **state,
+        "field_results": qc_results,
+        "messages": [HumanMessage(content=
+            f"[QC] ✅ {n_ok} ok · ⚠️ {n_warn} warning · ❌ {n_fail} fail"
+        )],
+    }
+
+
+
 
 async def node_human_review(state: PipelineState) -> PipelineState:
     edits   = state.get("human_edits", {})

@@ -281,6 +281,16 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
 
     <!-- Panel: Templates -->
     <div id="panel-tmpl">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="slabel" style="margin-bottom:0">Templates</div>
+        <button onclick="clearAllTemplates()" title="Xóa toàn bộ templates"
+          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;
+          padding:2px 6px;border-radius:4px;transition:all .15s"
+          onmouseover="this.style.color='var(--red)';this.style.background='rgba(239,71,111,.1)'"
+          onmouseout="this.style.color='var(--text3)';this.style.background='none'">
+          🗑 Xóa hết
+        </button>
+      </div>
       <div class="tmpl-list" id="tmplList">
         <div style="color:var(--text3);font-size:11px;padding:8px">Đang tải...</div>
       </div>
@@ -288,6 +298,16 @@ header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-botto
 
     <!-- Panel: Tài liệu nguồn -->
     <div id="panel-src" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="slabel" style="margin-bottom:0">Tài liệu nguồn</div>
+        <button onclick="clearAllSources()" title="Xóa toàn bộ tài liệu nguồn"
+          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;
+          padding:2px 6px;border-radius:4px;transition:all .15s"
+          onmouseover="this.style.color='var(--red)';this.style.background='rgba(239,71,111,.1)'"
+          onmouseout="this.style.color='var(--text3)';this.style.background='none'">
+          🗑 Xóa hết
+        </button>
+      </div>
       <div class="src-list" id="srcList">
         <div style="color:var(--text3);font-size:11px;padding:8px">Đang tải...</div>
       </div>
@@ -397,7 +417,7 @@ function renderSrcList() {
                 onclick="deleteSourceDoc('${d.id}','${d.filename.replace(/'/g,"\\'")}')">🗑</button>
             </div>
             <div class="src-name" title="${d.filename}">
-              ${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}
+              ${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'} ${d.filename}
             </div>
             <div class="src-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
             ${d.used_in_templates?.length
@@ -482,9 +502,9 @@ function showUploadSource() {
           onclick="document.getElementById('uploadSrcFileInput').click()">
           <div style="font-size:20px;margin-bottom:4px">📁</div>
           <div style="font-size:11px;color:var(--text2)">Click để chọn file</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">PDF · DOCX · TXT</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">PDF · DOCX · TXT · XLSX</div>
         </div>
-        <input type="file" id="uploadSrcFileInput" multiple accept=".pdf,.docx,.doc,.txt" style="display:none"
+        <input type="file" id="uploadSrcFileInput" multiple accept=".pdf,.docx,.doc,.txt,.xlsx,.xls" style="display:none"
           onchange="updateUploadSrcPreview(this)">
         <div id="uploadSrcFileList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
       </div>
@@ -503,7 +523,7 @@ function updateUploadSrcPreview(input) {
   const el = document.getElementById('uploadSrcFileList');
   el.innerHTML = [...input.files].map(f =>
     `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--bg2);border-radius:4px;font-size:11px">
-      <span>${f.name.endsWith('.pdf')?'📄':'📝'}</span>
+      <span>${f.name.endsWith('.pdf')?'📄':f.name.match(/\.xlsx?$/i)?'📊':'📝'}</span>
       <span style="flex:1;color:var(--text2)">${f.name}</span>
       <span style="color:var(--text3);font-family:monospace">${(f.size/1024).toFixed(1)} KB</span>
     </div>`).join('');
@@ -578,7 +598,7 @@ function openSrcPickerModal() {
                 <input type="checkbox" value="${d.id}" ${checked}
                   onchange="onPickerCheck(this,'picker-lbl-${d.id}')">
                 <div style="min-width:0">
-                  <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
+                  <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'} ${d.filename}</div>
                   <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
                 </div>
               </label>`;
@@ -671,7 +691,7 @@ function confirmSrcPicker() {
     list.innerHTML = docs.map(d => `
       <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;
         background:var(--bg2);border-radius:4px;font-size:11px">
-        <span>${d.filename.endsWith('.pdf')?'📄':'📝'}</span>
+        <span>${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'}</span>
         <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.filename}</span>
         <span style="color:var(--text3);font-family:monospace;flex-shrink:0">${((d.file_size||0)/1024).toFixed(1)} KB</span>
       </div>`).join('');
@@ -725,7 +745,7 @@ async function loadSrcDbList() {
             <label class="src-check-item" id="lbl-${d.id}" style="margin-bottom:3px">
               <input type="checkbox" value="${d.id}" onchange="onSrcCheck(this,'lbl-${d.id}')">
               <div style="min-width:0">
-                <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':'📝'} ${d.filename}</div>
+                <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'} ${d.filename}</div>
                 <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
               </div>
             </label>`).join('')}
@@ -968,7 +988,7 @@ function onFilePick(e) { addFiles([...e.target.files]); e.target.value=''; }
 function addFiles(files) {
   files.forEach(f => { if (!pendingFiles.find(p=>p.name===f.name)) pendingFiles.push(f); });
   document.getElementById('fileChips').innerHTML = pendingFiles.map(f =>
-    `<div class="chip">${f.name.endsWith('.pdf')?'📄':'📝'} ${f.name}<span class="rm" onclick="rmFile('${f.name}')">×</span></div>`).join('');
+    `<div class="chip">${f.name.endsWith('.pdf')?'📄':f.name.match(/\.xlsx?$/i)?'📊':'📝'} ${f.name}<span class="rm" onclick="rmFile('${f.name}')">×</span></div>`).join('');
   document.getElementById('btnUpload').disabled = pendingFiles.length === 0;
 }
 function rmFile(name) { pendingFiles = pendingFiles.filter(f=>f.name!==name); addFiles([]); }
@@ -1310,6 +1330,29 @@ async function deleteRun(id) {
     if (!res.ok) throw new Error(await res.text());
     toast('Đã xóa run', 'success'); await loadRuns();
   } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
+}
+
+async function clearAllTemplates() {
+  if (!confirm('Xóa toàn bộ templates?\n\nThao tác này xóa luôn các runs liên quan và không thể hoàn tác.')) return;
+  try {
+    const res = await fetch('/api/templates', { method: 'DELETE' });
+    if (!res.ok) throw new Error(await res.text());
+    selTmplId = null; currentRun = null;
+    document.getElementById('mainContent').innerHTML = '';
+    toast('Đã xóa toàn bộ templates', 'success');
+    await loadTemplates();
+  } catch(e) { toast('Xóa thất bại: ' + e.message, 'error'); }
+}
+
+async function clearAllSources() {
+  if (!confirm('Xóa toàn bộ tài liệu nguồn?\n\nThao tác này không thể hoàn tác.')) return;
+  try {
+    const res = await fetch('/api/sources', { method: 'DELETE' });
+    if (!res.ok) throw new Error(await res.text());
+    allSourceDocs = [];
+    toast('Đã xóa toàn bộ tài liệu nguồn', 'success');
+    await loadSourceDocs();
+  } catch(e) { toast('Xóa thất bại: ' + e.message, 'error'); }
 }
 
 async function clearAllRuns() {
