@@ -62,6 +62,18 @@ class RunOut(BaseModel):
     updated_at:   str
 
 
+# ─── Helper: build source_context from docs ─────────────────────────────────
+
+def _build_source_context(source_docs: List[Dict]) -> str:
+    """Build source_context string từ danh sách source_docs."""
+    if not source_docs:
+        return "(Không có tài liệu nguồn — AI sẽ generate dựa trên ngữ cảnh template)"
+    return "\n\n".join(
+        f"=== {d['filename']} ===\n{d['text'][:10000]}"
+        for d in source_docs if d.get('text')
+    ) or "(Không có tài liệu nguồn — AI sẽ generate dựa trên ngữ cảnh template)"
+
+
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
 @router.post("/start")
@@ -234,17 +246,20 @@ async def attach_sources(
         if src:
             source_docs.append(dict(src))
 
-    # Update LangGraph checkpoint state với source_docs
+    # Update LangGraph checkpoint state với source_docs + source_context
     config = {"configurable": {"thread_id": run_id}}
     try:
         state = await compiled_graph.aget_state(config)
         if state and state.values:
+            source_context = _build_source_context(source_docs)
             await compiled_graph.aupdate_state(
                 config,
-                {"source_docs": source_docs}
+                {"source_docs": source_docs, "source_context": source_context}
             )
-    except Exception:
-        pass  # Nếu chưa có checkpoint thì bỏ qua
+            print(f"[attach_sources] Injected {len(source_docs)} docs + "
+                  f"source_context ({len(source_context):,} chars) into checkpoint")
+    except Exception as e:
+        print(f"[attach_sources] Warning: could not update checkpoint: {e}")
 
     return {"attached": len(source_doc_ids)}
 
@@ -515,7 +530,7 @@ font-size:13pt;line-height:1.8;color:#111;background:#fff}}</style></head>
 
 async def _run_pipeline_steps(run_id: str, initial_state: PipelineState):
     """
-    Execute the LangGraph until the interrupt (before human_review).
+    Execute the LangGraph until the interrupt (before extract_sources).
     Persist field_results to DB after step 3 completes.
     """
     from utils.database import AsyncSessionLocal
@@ -567,12 +582,12 @@ async def _resume_upload(run_id: str):
 
 
 async def _resume_extract(run_id: str):
-    """Resume graph từ interrupt trước extract_sources → write_fields → dừng trước human_review."""
+    """Resume graph từ interrupt trước extract_sources → write_fields → qc_fields → dừng trước human_review."""
     from utils.database import AsyncSessionLocal
     import uuid as _uuid
     config = {"configurable": {"thread_id": run_id}}
     try:
-        # Luôn load source_docs từ DB (đảm bảo không bị mất khi attach_sources fail)
+        # ── Luôn load source_docs từ DB ──────────────────────────────────────
         async with AsyncSessionLocal() as db:
             run_row = await db.execute(text(
                 "SELECT template_id FROM pipeline_runs WHERE id=:id"
@@ -588,7 +603,12 @@ async def _resume_extract(run_id: str):
             """), {"rid": run_id})
             source_docs_from_db = [dict(s) for s in src_row.mappings()]
 
-        # Kiểm tra checkpoint còn tồn tại không (MemorySaver mất sau restart)
+        # ── Pre-build source_context để inject ───────────────────────────────
+        source_context = _build_source_context(source_docs_from_db)
+        print(f"[_resume_extract] Loaded {len(source_docs_from_db)} source docs from DB, "
+              f"context: {len(source_context):,} chars")
+
+        # ── Kiểm tra checkpoint ──────────────────────────────────────────────
         has_state = False
         try:
             ckpt = await compiled_graph.aget_state(config)
@@ -597,7 +617,7 @@ async def _resume_extract(run_id: str):
             pass
 
         if not has_state:
-            # Rebuild state từ DB
+            # ── Checkpoint mất → rebuild state từ DB ─────────────────────────
             print(f"[Pipeline] Checkpoint lost — rebuilding from DB for run {run_id}")
             async with AsyncSessionLocal() as db:
                 run_row2 = await db.execute(text("""
@@ -619,23 +639,37 @@ async def _resume_extract(run_id: str):
                 "run_id": run_id, "template_id": tid,
                 "template_name": run2["template_name"],
                 "template_fields": template_fields,
-                "source_docs": source_docs_from_db,  # từ DB
-                "source_context": "", "field_results": [],
+                "source_docs": source_docs_from_db,
+                "source_context": source_context,   # ← KEY FIX: inject context
+                "field_results": [],
                 "write_progress": 0, "review_submitted": False,
                 "human_edits": {}, "export_mode": "clean",
                 "exported_bytes": None, "current_step": 2,
                 "status": "awaiting_extract", "error": None, "messages": [],
             }
             await compiled_graph.aupdate_state(config, rebuilt, as_node="extract_sources")
+            print(f"[Pipeline] Rebuilt state with source_context: {len(source_context):,} chars")
         else:
-            # Checkpoint còn nhưng source_docs có thể rỗng → inject lại từ DB
+            # ── Checkpoint còn → inject cả source_docs VÀ source_context ─────
             await compiled_graph.aupdate_state(
                 config,
-                {"source_docs": source_docs_from_db}
+                {
+                    "source_docs": source_docs_from_db,
+                    "source_context": source_context,   # ← KEY FIX: inject context
+                }
             )
-            print(f"[Pipeline] Injected {len(source_docs_from_db)} source docs from DB")
+            print(f"[Pipeline] Injected {len(source_docs_from_db)} source docs + "
+                  f"source_context ({len(source_context):,} chars)")
 
+        # ── Resume graph ─────────────────────────────────────────────────────
         final_state = await compiled_graph.ainvoke(None, config=config)
+
+        # ── Log kết quả ──────────────────────────────────────────────────────
+        results = final_state.get("field_results", [])
+        non_empty = sum(1 for r in results if r.get("ai_value", "").strip())
+        print(f"[Pipeline] Done: {len(results)} fields, {non_empty} non-empty")
+
+        # ── Persist field_results vào DB ─────────────────────────────────────
         async with AsyncSessionLocal() as db:
             run_row = await db.execute(text(
                 "SELECT template_id FROM pipeline_runs WHERE id=:id"
@@ -643,7 +677,7 @@ async def _resume_extract(run_id: str):
             run = run_row.mappings().first()
             tid = str(run["template_id"])
 
-            for r in final_state.get("field_results", []):
+            for r in results:
                 fid_row = await db.execute(text(
                     "SELECT id FROM template_fields WHERE template_id=:tid AND field_key=:key"
                 ), {"tid": tid, "key": r["field_key"]})
@@ -678,6 +712,8 @@ async def _resume_extract(run_id: str):
             })
             await db.commit()
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         async with AsyncSessionLocal() as db:
             await db.execute(text(
                 "UPDATE pipeline_runs SET status='error', error_message=:err, updated_at=NOW() WHERE id=:id"

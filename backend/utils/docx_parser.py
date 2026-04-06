@@ -2,9 +2,17 @@
 DOCX field extractor and filler.
 Finds yellow-highlighted runs → extracts placeholder text + context.
 On export: replaces highlighted runs with filled values.
+
+═══ IMPROVEMENTS v2 ═══
+1. 8 field types: date, time_range, number, percentage, name, short, sentence, paragraph, bullet_list
+2. Bullet/list detection from placeholder structure (-, •, a), b), 1., 2.)
+3. Smarter Vietnamese banking patterns (nghị quyết, văn bản, đơn vị, chức danh)
+4. Rich type hints with format examples and negative examples
+5. Context-aware classification: xem cả paragraph trước/sau để hiểu loại trường
 """
 import os
 import re
+import re as _re
 import subprocess
 import tempfile
 import zipfile
@@ -47,103 +55,311 @@ def extract_fields(docx_bytes: bytes) -> List[Dict]:
         return _parse_highlights(os.path.join(unpack_dir, "word", "document.xml"))
 
 
-import re as _re
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPROVED: Field Type Detection Patterns
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# ─── Patterns detect loại field ──────────────────────────────────────────────
-
+# ── Date patterns ─────────────────────────────────────────────────────────────
 _DATE_PATTERNS = [
     _re.compile(r'\bDD/MM/YYYY\b', _re.I),
     _re.compile(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b'),
-    _re.compile(r'\bngày\b.{0,20}\btháng\b', _re.I),
-    _re.compile(r'\btháng\s*\d+\b', _re.I),
-    _re.compile(r'\bQuý\s+[IVX\d]+\b', _re.I),
+    _re.compile(r'\bngày\s+\d{1,2}\b', _re.I),
+    _re.compile(r'\btháng\s*\d{1,2}\b', _re.I),
     _re.compile(r'\bnăm\s+20\d{2}\b', _re.I),
     _re.compile(r'\b20\d{2}\b'),
-    _re.compile(r'ngày\s*\.\.\.|tháng\s*\.\.\.|năm\s*\.\.\.', _re.I),
+    _re.compile(r'ngày\s*[.…]{2,}|tháng\s*[.…]{2,}|năm\s*[.…]{2,}', _re.I),
+    _re.compile(r'[.…]{3,}\s*/\s*[.…]{3,}\s*/\s*[.…]{3,}'),  # .../.../.../
 ]
 
-_NUMBER_PATTERNS = [
-    _re.compile(r'\bXXX\b|\b\.\.\.\b|\bN\b'),
-    _re.compile(r'\d+[.,]\d+\s*(tỷ|triệu|nghìn|%|người|dự án|lệnh)', _re.I),
-    _re.compile(r'\bsố\s*(lượng|liệu|tiền|vốn|dự án)\b', _re.I),
-    _re.compile(r'\[\s*số\s*\]|\[\s*tỷ\s*\]|\[\s*%\s*\]', _re.I),
+# ── Time range / period patterns ──────────────────────────────────────────────
+_TIME_RANGE_PATTERNS = [
+    _re.compile(r'\bQuý\s+[IVX\d]+[/\s]*\d{4}\b', _re.I),
+    _re.compile(r'\bgiai\s*đoạn\b', _re.I),
+    _re.compile(r'\btừ\s+(tháng|năm|ngày)\b.*\bđến\b', _re.I),
+    _re.compile(r'\bnăm\s+\d{4}\s*[-–]\s*\d{4}\b'),
+    _re.compile(r'\b\d{1,2}\s*tháng\s*(đầu|cuối)\s*năm\b', _re.I),
+    _re.compile(r'\b(nửa đầu|nửa cuối|đầu năm|cuối năm|cả năm)\b', _re.I),
+    _re.compile(r'\bkỳ\s+báo\s*cáo\b', _re.I),
+    _re.compile(r'\bthời\s*(gian|kỳ|điểm)\b', _re.I),
 ]
+
+# ── Number / quantity patterns ────────────────────────────────────────────────
+_NUMBER_PATTERNS = [
+    _re.compile(r'\d+[.,]\d+\s*(tỷ|triệu|nghìn|người|dự án|lệnh|đồng|KHCN|KH)', _re.I),
+    _re.compile(r'\bsố\s*(lượng|liệu|tiền|vốn|dự án|giao dịch|lệnh|người)\b', _re.I),
+    _re.compile(r'\[\s*số\s*\]|\[\s*tỷ\s*\]', _re.I),
+    _re.compile(r'\bXXX\s*(tỷ|triệu|nghìn|đồng|%)', _re.I),
+    _re.compile(r'\b\d+\s*(tỷ|triệu|nghìn|đồng)\b', _re.I),
+]
+
+# ── Percentage patterns ───────────────────────────────────────────────────────
+_PERCENTAGE_PATTERNS = [
+    _re.compile(r'\d+[.,]?\d*\s*%'),
+    _re.compile(r'\[\s*%\s*\]'),
+    _re.compile(r'\bXXX\s*%'),
+    _re.compile(r'\btỷ\s*lệ\b', _re.I),
+    _re.compile(r'\b(đạt|tăng|giảm)\s+\d', _re.I),
+]
+
+# ── Name / title / entity patterns ────────────────────────────────────────────
+_NAME_PATTERNS = [
+    _re.compile(r'\b(Ông|Bà|Anh|Chị|Đ/c|đồng chí)\s', _re.I),
+    _re.compile(r'\bchức\s*(danh|vụ)\b', _re.I),
+    _re.compile(r'\b(Giám đốc|Phó Giám đốc|Trưởng phòng|Phó phòng|Chủ tịch|Tổng Giám đốc)\b', _re.I),
+    _re.compile(r'\b(Nghị quyết|Quyết định|Thông tư|Nghị định|Chỉ thị|Công văn)\s*số\b', _re.I),
+    _re.compile(r'\bsố\s+\d+[/\-]', _re.I),
+    _re.compile(r'\b(NQ|QĐ|TT|NĐ|CT|CV)\s*\d+', _re.I),
+    _re.compile(r'\b[A-ZÀ-Ỹ]{2,}\b'),  # viết hoa >= 2 ký tự liên tục = tên viết tắt
+]
+
+# ── Bullet list patterns ─────────────────────────────────────────────────────
+_BULLET_PATTERNS = [
+    _re.compile(r'^\s*[-–—•]\s', _re.M),           # - hoặc • đầu dòng
+    _re.compile(r'^\s*[a-zđ]\)\s', _re.M),          # a) b) c)
+    _re.compile(r'^\s*\d+[.)]\s', _re.M),            # 1. 2. 3) 4)
+    _re.compile(r'^\s*\([a-zđivx\d]+\)\s', _re.M),   # (i) (ii) (a) (1)
+    _re.compile(r';\s*\n', _re.M),                    # dấu ; xuống dòng = list
+    _re.compile(r'(Thứ nhất|Thứ hai|Thứ ba|Một là|Hai là)', _re.I),
+]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPROVED: Type Hints — detailed, with format examples + negative examples
+# ═══════════════════════════════════════════════════════════════════════════════
 
 _FIELD_TYPE_HINTS = {
     "date": (
-        "ĐÂY LÀ TRƯỜNG NGÀY THÁNG.\n"
-        "→ Điền đúng ngày/tháng/năm thực tế từ tài liệu nguồn hoặc ngày hiện tại.\n"
-        "→ Giữ đúng định dạng: DD/MM/YYYY, tháng X/YYYY, Quý X/YYYY.\n"
-        "→ KHÔNG điền text khác, KHÔNG để trống."
+        "ĐÂY LÀ TRƯỜNG NGÀY THÁNG CỤ THỂ.\n"
+        "→ Điền MỘT ngày/tháng/năm duy nhất từ tài liệu nguồn hoặc ngày hiện tại.\n"
+        "→ Định dạng chuẩn: DD/MM/YYYY (ví dụ: 15/03/2026)\n"
+        "→ Hoặc: ngày 15 tháng 03 năm 2026\n"
+        "→ KHÔNG viết thành câu, KHÔNG thêm mô tả.\n"
+        "→ KHÔNG để trống hoặc viết '...' — phải có ngày cụ thể.\n"
+        "\n"
+        "✓ ĐÚNG: '15/03/2026', 'ngày 20 tháng 01 năm 2026'\n"
+        "✗ SAI:  'trong năm 2026', 'gần đây', 'ngày...tháng...năm...'"
     ),
+
+    "time_range": (
+        "ĐÂY LÀ TRƯỜNG KHOẢNG THỜI GIAN / KỲ BÁO CÁO.\n"
+        "→ Điền giai đoạn, quý, kỳ báo cáo từ tài liệu nguồn.\n"
+        "→ Giữ đúng cách viết chuẩn hành chính:\n"
+        "   'Quý I/2026', '6 tháng đầu năm 2026', 'giai đoạn 2021-2025'\n"
+        "   'từ tháng 01/2026 đến tháng 06/2026', 'năm 2025'\n"
+        "→ KHÔNG viết thành câu mô tả.\n"
+        "\n"
+        "✓ ĐÚNG: 'Quý I/2026', '6 tháng đầu năm 2026'\n"
+        "✗ SAI:  'thời gian qua', 'giai đoạn vừa qua'"
+    ),
+
     "number": (
-        "ĐÂY LÀ TRƯỜNG SỐ LIỆU / CON SỐ.\n"
-        "→ Tìm con số cụ thể từ tài liệu nguồn.\n"
-        "→ Giữ đơn vị: tỷ đồng, %, triệu người, dự án...\n"
-        "→ Nếu không tìm được → ghi rõ 'chưa có số liệu cụ thể'."
+        "ĐÂY LÀ TRƯỜNG SỐ LIỆU / CON SỐ CỤ THỂ.\n"
+        "→ Tìm con số chính xác từ tài liệu nguồn.\n"
+        "→ GIỮ NGUYÊN đơn vị: tỷ đồng, triệu người, nghìn lệnh/ngày, dự án...\n"
+        "→ Dùng dấu phẩy phân cách hàng nghìn: 1.234,5 tỷ đồng\n"
+        "→ Nếu không tìm được số → ghi: 'chưa có số liệu cụ thể trong tài liệu nguồn'\n"
+        "→ KHÔNG bịa số, KHÔNG ước tính, KHÔNG làm tròn.\n"
+        "\n"
+        "✓ ĐÚNG: '1.847,3 tỷ đồng', '9,8 triệu KHCN', '156 dự án'\n"
+        "✗ SAI:  'khoảng 2.000 tỷ', 'hàng nghìn', 'một lượng lớn'"
     ),
+
+    "percentage": (
+        "ĐÂY LÀ TRƯỜNG TỶ LỆ PHẦN TRĂM.\n"
+        "→ Tìm % chính xác từ tài liệu nguồn.\n"
+        "→ Giữ đúng số thập phân: 94,5% (không làm tròn thành 95%)\n"
+        "→ Có thể kèm so sánh nếu source có: 'đạt 94,5%, tăng 12% so với cùng kỳ'\n"
+        "→ KHÔNG bịa %, KHÔNG ước tính.\n"
+        "\n"
+        "✓ ĐÚNG: '94,5%', 'đạt 87,2%, tăng 5,3 điểm %'\n"
+        "✗ SAI:  'tỷ lệ cao', 'gần 100%', 'phần lớn'"
+    ),
+
+    "name": (
+        "ĐÂY LÀ TRƯỜNG TÊN / MÃ SỐ / VĂN BẢN.\n"
+        "→ Điền chính xác: tên người, tên đơn vị, số văn bản, mã dự án.\n"
+        "→ Viết hoa đúng: BIDV, NHNN, NQ57, Bộ Công an\n"
+        "→ Số văn bản đúng format: số 123/QĐ-BIDV ngày 15/03/2026\n"
+        "→ KHÔNG viết câu — chỉ điền tên/mã.\n"
+        "\n"
+        "✓ ĐÚNG: 'Nghị quyết số 57-NQ/TW', 'Ban Công nghệ Thông tin'\n"
+        "✗ SAI:  'nghị quyết liên quan', 'đơn vị chức năng'"
+    ),
+
     "short": (
-        "ĐÂY LÀ TRƯỜNG NGẮN (tên, mã, cụm từ).\n"
-        "→ Điền 1 cụm từ hoặc tên cụ thể từ tài liệu nguồn.\n"
-        "→ Không cần câu hoàn chỉnh."
+        "ĐÂY LÀ TRƯỜNG NGẮN (cụm từ, nhãn, tiêu đề).\n"
+        "→ Điền 1 cụm từ hoặc nhãn cụ thể, thường 3-25 ký tự.\n"
+        "→ Không cần câu hoàn chỉnh.\n"
+        "→ Lấy chính xác từ tài liệu nguồn hoặc ngữ cảnh xung quanh.\n"
+        "\n"
+        "✓ ĐÚNG: 'Hoàn thành', 'Đang triển khai', 'Ban CNTT'\n"
+        "✗ SAI:  'Mục tiêu đã được hoàn thành trong quý I theo kế hoạch'"
     ),
-    "paragraph": (
-        "ĐÂY LÀ TRƯỜNG ĐOẠN VĂN DÀI.\n"
-        "→ Viết nhiều câu, đầy đủ ý, có số liệu cụ thể.\n"
-        "→ Độ dài output PHẢI tương đương hoặc DÀI HƠN placeholder gốc.\n"
-        "→ Liệt kê tất cả kết quả, dự án, số liệu liên quan từ tài liệu nguồn."
-    ),
+
     "sentence": (
-        "ĐÂY LÀ TRƯỜNG 1-3 CÂU.\n"
-        "→ Viết 1-3 câu hoàn chỉnh, có số liệu cụ thể.\n"
-        "→ Văn phong hành chính, súc tích."
+        "ĐÂY LÀ TRƯỜNG 1-3 CÂU VĂN LIỀN MẠCH.\n"
+        "→ Viết 1-3 câu hoàn chỉnh, mạch lạc, văn phong hành chính.\n"
+        "→ Mỗi câu PHẢI chứa ít nhất 1 dữ kiện cụ thể (số, tên, ngày).\n"
+        "→ Dùng câu trần thuật — KHÔNG dùng gạch đầu dòng.\n"
+        "→ Văn phong: súc tích, khách quan, chủ ngữ rõ ràng.\n"
+        "\n"
+        "✓ ĐÚNG: 'BIDV hoàn thành triển khai hệ thống Core Banking mới với 156 chi nhánh kết nối trực tiếp, "
+        "đạt 98% kế hoạch Quý I/2026.'\n"
+        "✗ SAI:  'Đã triển khai tốt các nhiệm vụ được giao, kết quả đạt khả quan.'"
+    ),
+
+    "paragraph": (
+        "ĐÂY LÀ TRƯỜNG ĐOẠN VĂN DÀI (nhiều câu, liền mạch).\n"
+        "→ Viết đoạn văn hoàn chỉnh, nhiều câu, mỗi câu có dữ kiện cụ thể.\n"
+        "→ CẤU TRÚC: câu mở đầu tổng quát → các câu chi tiết số liệu → câu kết.\n"
+        "→ Văn phong LIỀN MẠCH — dùng từ nối: 'Trong đó,', 'Cụ thể,', 'Bên cạnh đó,'\n"
+        "→ KHÔNG dùng gạch đầu dòng trừ khi placeholder gốc có gạch đầu dòng.\n"
+        "→ Độ dài: TỐI THIỂU bằng placeholder gốc, nên dài hơn nếu có đủ dữ kiện.\n"
+        "\n"
+        "✓ ĐÚNG: 'Trong Quý I/2026, BIDV đã hoàn thành triển khai 3 dự án trọng điểm về chuyển đổi số. "
+        "Cụ thể, dự án Core Banking thế hệ mới kết nối 156 chi nhánh với uptime 99,7%. "
+        "Hệ thống thanh toán QR xử lý trung bình 2,3 triệu lệnh/ngày, tăng 45% so với Quý IV/2025. "
+        "Nền tảng eKYC tích hợp VNeID hoàn thành xác thực 9,8 triệu KHCN.'\n"
+        "✗ SAI:  'BIDV đã triển khai nhiều dự án quan trọng và đạt kết quả tích cực trong công tác chuyển đổi số.'"
+    ),
+
+    "bullet_list": (
+        "ĐÂY LÀ TRƯỜNG DANH SÁCH / GẠH ĐẦU DÒNG.\n"
+        "→ Viết theo format gạch đầu dòng, mỗi dòng là 1 ý riêng biệt.\n"
+        "→ Dùng ký hiệu '- ' đầu mỗi dòng (hoặc giữ đúng format placeholder gốc).\n"
+        "→ Mỗi gạch đầu dòng PHẢI có ít nhất 1 dữ kiện cụ thể.\n"
+        "→ Các dòng phân cách bằng ký tự xuống dòng '\\n'.\n"
+        "→ Thường dùng cho: liệt kê kết quả, danh sách dự án, các bước triển khai.\n"
+        "\n"
+        "✓ ĐÚNG:\n"
+        "'- Dự án Core Banking: kết nối 156 chi nhánh, uptime 99,7%\\n"
+        "- Hệ thống QR Pay: 2,3 triệu lệnh/ngày, tăng 45%\\n"
+        "- eKYC VNeID: xác thực 9,8 triệu KHCN'\n"
+        "✗ SAI:\n"
+        "'- Đã triển khai nhiều dự án\\n- Kết quả tốt\\n- Tiếp tục phát huy'"
     ),
 }
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPROVED: Field Classification
+# ═══════════════════════════════════════════════════════════════════════════════
+
 def _classify_field(placeholder: str, context: str) -> str:
-    """Phân loại field dựa trên placeholder text và ngữ cảnh."""
+    """
+    Phân loại field thông minh hơn:
+    1. Check bullet/list structure trước (ưu tiên cao nhất cho format)
+    2. Check date/time_range
+    3. Check percentage (trước number vì % cũng chứa số)
+    4. Check number
+    5. Check name/entity
+    6. Phân loại theo độ dài: short / sentence / paragraph
+    """
     ph     = placeholder.strip()
     ctx    = context.strip()
     ph_len = len(ph)
 
-    # Với placeholder DÀI (> 60 ký tự) → ưu tiên phân loại theo độ dài
-    if ph_len > 60:
-        return "paragraph" if ph_len > 200 else "sentence"
+    # ═══ 1. BULLET LIST — check cấu trúc placeholder có gạch đầu dòng không ═══
+    bullet_score = 0
+    for pat in _BULLET_PATTERNS:
+        if pat.search(ph):
+            bullet_score += 1
+    # Nhiều dòng + có pattern list → chắc chắn là bullet
+    line_count = ph.count('\n') + 1
+    if bullet_score >= 1 and line_count >= 2:
+        return "bullet_list"
+    # Placeholder dài + nhiều dấu ; hoặc nhiều dòng → likely list
+    if ph_len > 100 and (ph.count(';') >= 2 or line_count >= 3):
+        return "bullet_list"
+    # Placeholder có nhiều "-" đầu dòng
+    if len(_re.findall(r'^\s*[-–—•]', ph, _re.M)) >= 2:
+        return "bullet_list"
 
-    # ── Ngày tháng: check placeholder trước ──────────────────────────────────
+    # ═══ 2. DATE — ngày cụ thể ═══════════════════════════════════════════════
     for pat in _DATE_PATTERNS:
         if pat.search(ph):
-            return "date"
-
-    # ── Ngày tháng: check context nếu placeholder là dấu chấm lửng / mờ ────
-    # Các placeholder kiểu "Năm ……", "Quý …/202…", "……", "Thời gian: …"
-    _FUZZY_DATE = _re.compile(
-        r'\b(ngày|tháng|năm|quý|kỳ|thời\s*gian|giai\s*đoạn|dd|mm|yyyy)\b', _re.I
-    )
-    if _FUZZY_DATE.search(ph) or _re.fullmatch(r'[.\u2026\s/\-–—]+', ph):
-        # Placeholder là toàn dấu lửng/gạch → xem context có ngày không
-        for pat in _DATE_PATTERNS:
-            if pat.search(ctx):
+            # Nếu placeholder dài > 60 → không phải field ngày thuần túy
+            if ph_len <= 60:
                 return "date"
+
+    # Placeholder chỉ toàn dấu lửng/gạch → xem context
+    if _re.fullmatch(r'[.\u2026\s/\-–—…]+', ph):
+        _FUZZY_DATE = _re.compile(
+            r'\b(ngày|tháng|năm|quý|kỳ|thời\s*gian|dd|mm|yyyy)\b', _re.I
+        )
         if _FUZZY_DATE.search(ctx):
             return "date"
 
-    # Placeholder có từ khoá thời gian nhưng chưa match pattern cụ thể
-    if _FUZZY_DATE.search(ph):
+    # Placeholder có từ khóa thời gian nhưng ngắn
+    _FUZZY_DATE2 = _re.compile(
+        r'\b(ngày|tháng|năm)\b', _re.I
+    )
+    if _FUZZY_DATE2.search(ph) and ph_len <= 40:
         return "date"
 
-    # ── Số liệu ───────────────────────────────────────────────────────────────
+    # ═══ 3. TIME RANGE — khoảng thời gian / kỳ báo cáo ══════════════════════
+    for pat in _TIME_RANGE_PATTERNS:
+        if pat.search(ph):
+            if ph_len <= 80:
+                return "time_range"
+
+    # Context có keyword kỳ báo cáo + placeholder ngắn
+    _TIME_CTX = _re.compile(
+        r'\b(kỳ báo cáo|giai đoạn|quý|6 tháng|cả năm|thời kỳ)\b', _re.I
+    )
+    if _TIME_CTX.search(ctx) and ph_len <= 50 and _re.fullmatch(r'[.\u2026\s/\-–—…\d]+', ph):
+        return "time_range"
+
+    # ═══ 4. PERCENTAGE — tỷ lệ % ═════════════════════════════════════════════
+    pct_score = 0
+    for pat in _PERCENTAGE_PATTERNS:
+        if pat.search(ph):
+            pct_score += 1
+    if pct_score >= 1 and ph_len <= 40:
+        return "percentage"
+
+    # ═══ 5. NUMBER — con số cụ thể ═══════════════════════════════════════════
+    num_score = 0
     for pat in _NUMBER_PATTERNS:
         if pat.search(ph):
+            num_score += 1
+    # Placeholder chỉ là "XXX" hoặc "..." + context có đơn vị
+    if _re.fullmatch(r'[.\u2026Xx\s]+', ph) and ph_len <= 20:
+        _NUM_CTX = _re.compile(r'\b(tỷ|triệu|nghìn|%|đồng|lệnh|người|dự án)\b', _re.I)
+        if _NUM_CTX.search(ctx):
             return "number"
+    if num_score >= 1 and ph_len <= 60:
+        return "number"
 
-    # ── Độ dài ────────────────────────────────────────────────────────────────
+    # ═══ 6. NAME / ENTITY ════════════════════════════════════════════════════
+    name_score = 0
+    for pat in _NAME_PATTERNS:
+        if pat.search(ph):
+            name_score += 1
+    # Context có "tên", "số văn bản", "đơn vị" → name
+    _NAME_CTX = _re.compile(
+        r'\b(tên|họ và tên|chức danh|số văn bản|đơn vị|cơ quan|bên)\b', _re.I
+    )
+    if _NAME_CTX.search(ctx) and ph_len <= 80:
+        return "name"
+    if name_score >= 2 and ph_len <= 60:
+        return "name"
+
+    # ═══ 7. PHÂN LOẠI THEO ĐỘ DÀI ═══════════════════════════════════════════
     if ph_len <= 25:
         return "short"
-    elif ph_len <= 200:
+    elif ph_len <= 120:
+        return "sentence"
+    elif ph_len <= 300:
+        # Check lại — có thể là bullet list ngắn
+        if ph.count(';') >= 2 or len(_re.findall(r'[-–•]', ph)) >= 2:
+            return "bullet_list"
         return "sentence"
     else:
+        # > 300 chars
+        # Check bullet list cho đoạn dài
+        if bullet_score >= 1 or ph.count(';') >= 3 or line_count >= 3:
+            return "bullet_list"
         return "paragraph"
 
 
@@ -169,8 +385,10 @@ def _parse_highlights(doc_xml_path: str) -> List[Dict]:
             t   = run.find(f"{{{NS_W}}}t")
             if rpr is not None and t is not None and t.text:
                 hl  = rpr.find(f"{{{NS_W}}}highlight")
+                shd = rpr.find(f"{{{NS_W}}}shd")
+                shd_val = shd.get(f"{{{NS_W}}}fill") if shd is not None else None
                 val = hl.get(f"{{{NS_W}}}val") if hl is not None else None
-                if val == "yellow":
+                if val == "yellow" or shd_val == "FFFF00":   # highlight vàng → replaces
                     yellow_texts.append(t.text)
                 elif val is not None:   # bất kỳ màu nào khác vàng → insert_below
                     green_texts.append(t.text)
@@ -183,22 +401,32 @@ def _parse_highlights(doc_xml_path: str) -> List[Dict]:
         field_mode  = "replace" if yellow_texts else "insert_below"
         placeholder = "".join(highlights)
 
-        # Context: đoạn trước + hiện tại + sau
-        prev_text = ""
-        if para_idx > 0:
-            prev_runs = list(all_paras[para_idx-1].iter(f"{{{NS_W}}}r"))
-            prev_text = "".join(
-                (r.find(f"{{{NS_W}}}t").text or "")
-                for r in prev_runs if r.find(f"{{{NS_W}}}t") is not None
-            )
-        next_text = ""
-        if para_idx < len(all_paras) - 1:
-            next_runs = list(all_paras[para_idx+1].iter(f"{{{NS_W}}}r"))
-            next_text = "".join(
-                (r.find(f"{{{NS_W}}}t").text or "")
-                for r in next_runs if r.find(f"{{{NS_W}}}t") is not None
-            )
-        rich_context = f"{prev_text[:100]} | {full_text[:200]} | {next_text[:100]}".strip()
+        # Context: đoạn trước + hiện tại + sau (mở rộng hơn — 2 đoạn trước/sau)
+        prev_texts = []
+        for offset in [1, 2]:
+            if para_idx >= offset:
+                prev_runs = list(all_paras[para_idx-offset].iter(f"{{{NS_W}}}r"))
+                prev_t = "".join(
+                    (r.find(f"{{{NS_W}}}t").text or "")
+                    for r in prev_runs if r.find(f"{{{NS_W}}}t") is not None
+                )
+                if prev_t.strip():
+                    prev_texts.insert(0, prev_t[:120])
+
+        next_texts = []
+        for offset in [1, 2]:
+            if para_idx + offset < len(all_paras):
+                next_runs = list(all_paras[para_idx+offset].iter(f"{{{NS_W}}}r"))
+                next_t = "".join(
+                    (r.find(f"{{{NS_W}}}t").text or "")
+                    for r in next_runs if r.find(f"{{{NS_W}}}t") is not None
+                )
+                if next_t.strip():
+                    next_texts.append(next_t[:120])
+
+        rich_context = " | ".join(
+            prev_texts + [full_text[:250]] + next_texts
+        ).strip()
 
         field_type = _classify_field(placeholder, rich_context)
 
@@ -206,11 +434,12 @@ def _parse_highlights(doc_xml_path: str) -> List[Dict]:
             "key":          f"para_{para_idx}",
             "para_idx":     para_idx,
             "placeholder":  placeholder,
-            "context":      rich_context[:400],
+            "context":      rich_context[:500],  # tăng từ 400 → 500
             "field_type":   field_type,
-            "type_hint":    _FIELD_TYPE_HINTS[field_type],
-            "field_mode":   field_mode,   # "replace" | "insert_below"
+            "type_hint":    _FIELD_TYPE_HINTS.get(field_type, _FIELD_TYPE_HINTS["sentence"]),
+            "field_mode":   field_mode,
         })
+
     return fields
 
 
@@ -297,9 +526,7 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
     tree  = ET.fromstring(raw)
     paras = list(tree.iter(f"{{{NS_W}}}p"))
 
-    # insert_below cần chèn paragraph → thu thập trước, thực hiện sau
-    # để không làm lệch index khi iterate
-    inserts = []  # list of (parent, para_el, new_para_el)
+    inserts = []
 
     for para_idx, para in enumerate(paras):
         key   = f"para_{para_idx}"
@@ -309,7 +536,6 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
 
         mode = mode_map.get(key, "replace")
 
-        # Thu thập highlighted runs — vàng = replace, màu khác = insert_below
         h_runs = []
         for run in para.iter(f"{{{NS_W}}}r"):
             rpr = run.find(f"{{{NS_W}}}rPr")
@@ -317,7 +543,7 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
             if rpr is not None and t is not None and t.text:
                 hl     = rpr.find(f"{{{NS_W}}}highlight")
                 val_hl = hl.get(f"{{{NS_W}}}val") if hl is not None else None
-                if val_hl is not None:   # bất kỳ màu highlight nào
+                if val_hl is not None:
                     h_runs.append((t, rpr, hl))
 
         if not h_runs:
@@ -326,7 +552,6 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
         first_t, first_rpr, first_hl = h_runs[0]
 
         if mode == "replace":
-            # Ghi đè text, xử lý highlight
             first_t.text = value
             if value.startswith(' ') or value.endswith(' '):
                 first_t.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
@@ -341,17 +566,14 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
                     t.text = ""
 
         elif mode == "insert_below":
-            # Giữ nguyên text tiêu đề, xóa highlight khỏi dòng tiêu đề
             for t, rpr, hl in h_runs:
-                rpr.remove(hl)   # bỏ highlight xanh trên dòng tiêu đề
+                rpr.remove(hl)
 
-            # Tạo paragraph mới với nội dung AI
             new_p  = _build_new_para(value, first_rpr)
             parent = _find_parent(tree, para)
             if parent is not None:
                 inserts.append((parent, para, new_p))
 
-    # Thực hiện inserts (sau khi xong loop để không lệch index)
     for parent, ref_para, new_p in inserts:
         children = list(parent)
         for i, child in enumerate(children):
@@ -359,7 +581,6 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
                 parent.insert(i + 1, new_p)
                 break
 
-    # Serialize
     new_xml = ET.tostring(tree, encoding="unicode", xml_declaration=False)
     new_end = new_xml.find('>') + 1
     new_xml = orig_hdr + new_xml[new_end:]
@@ -369,8 +590,6 @@ def _process_fields(raw: bytes, field_values: List[Dict], keep_highlight: bool =
 
 def _replace_highlights_raw(raw: bytes, field_values: List[Dict], apply_colors: bool) -> bytes:
     return _process_fields(raw, field_values)
-
-
 
 
 # ─── Extract text from source files ──────────────────────────────────────────
@@ -398,11 +617,9 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
     finally:
         os.unlink(tmp_path)
 
-
 def _extract_text_from_excel(file_bytes: bytes, ext: str) -> str:
     """
     Đọc Excel → text dạng bảng, mỗi sheet là 1 section.
-    Dùng openpyxl (xlsx) hoặc xlrd (xls).
     """
     import io
     lines = []
@@ -419,7 +636,7 @@ def _extract_text_from_excel(file_bytes: bytes, ext: str) -> str:
                         val = cell.value
                         if val is not None:
                             cells.append(str(val).strip())
-                    if any(cells):  # bỏ dòng trống hoàn toàn
+                    if any(cells):
                         lines.append(" | ".join(cells))
         elif ext == ".xls":
             import xlrd
