@@ -27,6 +27,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: "http://10.53.120.1:8080"
+        HTTPS_PROXY: "http://10.53.120.1:8080"
+        NO_PROXY: "localhost,127.0.0.1,db"
     container_name: bidv_backend
     restart: unless-stopped
     environment:
@@ -34,7 +38,7 @@ services:
       DATABASE_URL_SYNC: postgresql://bidv:bidv_secret@db:5432/bidv_agent
       
       PYTHONUNBUFFERED: "1"
-      LANGCHAIN_TRACING_V2: "false"
+      LANGCHAIN_TRACING_V2: "true"
       LANGCHAIN_API_KEY: "${LANGCHAIN_API_KEY}"
       LANGCHAIN_PROJECT: "bidv-agent"             # tên project trên LangSmith
       LANGCHAIN_ENDPOINT: "https://api.smith.langchain.com"

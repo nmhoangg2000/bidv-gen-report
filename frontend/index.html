@@ -4,1614 +4,780 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BIDV Report AI Agent</title>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN SYSTEM — Refined Banking + Modern Glass
+   ═══════════════════════════════════════════════════════════ */
 :root {
-  --bg:#f0f2f5;--bg2:#e8eaed;--bg3:#ffffff;--surface:#ffffff;--surface2:#f0f2f5;
-  --accent:#0078d4;--accent2:#005a9e;--gold:#ca7700;--green:#107c10;--red:#d13438;
-  --purple:#5c2d91;--purple2:#4b2470;
-  --text:#1a1a1a;--text2:#3d3d3d;--text3:#767676;
-  --border:rgba(0,120,212,.15);--border2:rgba(0,0,0,.1);
-  --r:4px;--rs:3px;
+  --bg: #f5f6f8;
+  --bg2: #eceef2;
+  --bg3: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #fafbfc;
+  --glass: rgba(255,255,255,.72);
+  --glass-border: rgba(255,255,255,.45);
+
+  --primary: #1a56db;
+  --primary-light: #e8eefb;
+  --primary-dark: #143faa;
+  --accent: #0ea5e9;
+  --accent-soft: rgba(14,165,233,.08);
+
+  --green: #059669;
+  --green-soft: rgba(5,150,105,.08);
+  --green-border: rgba(5,150,105,.2);
+  --gold: #d97706;
+  --gold-soft: rgba(217,119,6,.08);
+  --gold-border: rgba(217,119,6,.2);
+  --red: #dc2626;
+  --red-soft: rgba(220,38,38,.06);
+  --red-border: rgba(220,38,38,.2);
+
+  --text: #111827;
+  --text2: #374151;
+  --text3: #6b7280;
+  --text4: #9ca3af;
+
+  --border: rgba(0,0,0,.06);
+  --border2: rgba(0,0,0,.09);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.1);
+  --shadow-glow: 0 0 24px rgba(26,86,219,.12);
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+  --radius-full: 9999px;
 }
+
+/* ═══ RESET ═══ */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-body::before{content:'';position:fixed;inset:0;
-  background-image:none;pointer-events:none;z-index:0}
-.wrap{position:relative;z-index:1;max-width:100%;margin:0;padding:0 24px;flex:1}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{font-family:'Lexend',system-ui,sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;font-weight:400;letter-spacing:-.01em}
 
-header{display:flex;align-items:center;gap:18px;padding:28px 0 22px;border-bottom:1px solid var(--border2);margin-bottom:28px}
-.logo{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  border-radius:var(--rs);display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 20px rgba(0,180,216,.3);flex-shrink:0;overflow:hidden;padding:4px}
-.logo img{width:100%;height:100%;object-fit:contain;display:block}
-.hero-avatar{width:72px;height:72px;display:block;object-fit:contain;margin:0 auto 14px;
-  filter:drop-shadow(0 8px 16px rgba(0,120,212,.18))}
-.htext h1{font-size:19px;font-weight:700;
-  color:#1a1a1a;-webkit-text-fill-color:#1a1a1a}
-.htext p{font-size:12px;color:var(--text3);margin-top:2px}
-.badge{margin-left:auto;display:flex;gap:8px;align-items:center}
-.badge span{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);
-  color:var(--purple);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.5px}
-.badge .dot-live{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* ═══ BACKGROUND TEXTURE ═══ */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(26,86,219,.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 90%, rgba(14,165,233,.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(5,150,105,.02) 0%, transparent 60%)}
 
-/* Layout */
-.layout{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}
-.sidebar{position:sticky;top:20px;display:flex;flex-direction:column;gap:14px}
-.slabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px}
+/* ═══ LAYOUT ═══ */
+.wrap{position:relative;z-index:1;max-width:1440px;width:100%;margin:0 auto;padding:0 32px;flex:1}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:28px;align-items:start}
 
-/* Template cards */
+/* ═══ HEADER ═══ */
+header{display:flex;align-items:center;gap:16px;padding:24px 0 20px;
+  border-bottom:1px solid var(--border);margin-bottom:28px}
+.logo{width:44px;height:44px;background:var(--primary);border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  overflow:hidden;padding:5px;box-shadow:var(--shadow-glow)}
+.logo img{width:100%;height:100%;object-fit:contain;display:block;filter:brightness(10)}
+.htext h1{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.htext p{font-size:11px;color:var(--text3);margin-top:1px;font-weight:400}
+.badge{margin-left:auto;display:flex;gap:10px;align-items:center}
+.badge span{background:var(--primary-light);color:var(--primary);
+  font-size:10px;font-weight:600;padding:5px 12px;border-radius:var(--radius-full);letter-spacing:0}
+.dot-live{width:7px;height:7px;background:var(--green);border-radius:50%;
+  animation:pulse 2.5s ease-in-out infinite;box-shadow:0 0 6px rgba(5,150,105,.4)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.85)}}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{position:sticky;top:20px;display:flex;flex-direction:column;gap:16px}
+.sidebar-tabs{display:flex;gap:4px;background:var(--bg2);border-radius:var(--radius);padding:4px;margin-bottom:8px}
+.stab{flex:1;padding:10px 8px;font-size:11px;font-weight:600;text-align:center;
+  cursor:pointer;color:var(--text3);border-radius:var(--radius-sm);
+  transition:all .2s;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;gap:5px}
+.stab.active{color:var(--primary);background:var(--bg3);box-shadow:var(--shadow-sm)}
+.stab:hover:not(.active){color:var(--text2);background:rgba(0,0,0,.03)}
+.slabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin-bottom:6px}
+
+/* ═══ TEMPLATE CARDS ═══ */
 .tmpl-list{display:flex;flex-direction:column;gap:6px}
-.tmpl-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
-  padding:12px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.tmpl-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px 16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .tmpl-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:var(--accent);opacity:0;transition:opacity .2s}
-.tmpl-card:hover{border-color:var(--border);background:var(--surface)}
-.tmpl-card.active{border-color:rgba(0,180,216,.3);background:var(--surface)}
+  background:var(--primary);opacity:0;transition:opacity .2s;border-radius:0 2px 2px 0}
+.tmpl-card:hover{border-color:var(--border2);background:var(--surface-hover);box-shadow:var(--shadow-sm)}
+.tmpl-card.active{border-color:rgba(26,86,219,.2);background:var(--primary-light)}
 .tmpl-card.active::before{opacity:1}
-.tmpl-del{position:absolute;top:8px;right:8px;width:22px;height:22px;
-  background:rgba(239,71,111,0);border:none;color:var(--text3);border-radius:4px;
-  cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:all .15s;z-index:2}
-.tmpl-card:hover .tmpl-del{opacity:1;background:rgba(239,71,111,.12);color:var(--red)}
-.tmpl-del:hover{background:rgba(239,71,111,.25) !important}
-.tmpl-actions{position:absolute;top:6px;right:6px;display:flex;gap:3px;
+.tmpl-actions{position:absolute;top:8px;right:8px;display:flex;gap:2px;
   opacity:0;transition:opacity .15s;z-index:2}
 .tmpl-card:hover .tmpl-actions{opacity:1}
-.tmpl-action-btn{width:22px;height:22px;background:none;border:none;
-  color:var(--text3);border-radius:4px;cursor:pointer;font-size:13px;
+.tmpl-action-btn{width:24px;height:24px;background:var(--bg2);border:none;
+  color:var(--text3);border-radius:var(--radius-xs);cursor:pointer;font-size:12px;
   display:flex;align-items:center;justify-content:center;transition:all .15s}
-.tmpl-action-btn:hover{background:rgba(0,120,212,.12);color:var(--accent)}
-.tmpl-action-del:hover{background:rgba(239,71,111,.12) !important;color:var(--red) !important}
-.tn{font-size:9px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:2px}
-.tm{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
-.td{font-size:10px;color:var(--text3);margin-top:2px}
-.tf{margin-top:5px;display:inline-flex;align-items:center;gap:3px;
-  background:rgba(244,162,89,.1);border:1px solid rgba(244,162,89,.2);
-  color:var(--gold);font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px}
+.tmpl-action-btn:hover{background:var(--primary-light);color:var(--primary)}
+.tmpl-action-del:hover{background:var(--red-soft) !important;color:var(--red) !important}
+.tn{font-size:10px;font-weight:600;color:var(--primary);font-family:'DM Mono',monospace;margin-bottom:3px;letter-spacing:.3px}
+.tm{font-size:13px;font-weight:600;color:var(--text);line-height:1.35}
+.td{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400}
+.tf{margin-top:8px;display:inline-flex;align-items:center;gap:4px;
+  background:var(--gold-soft);border:1px solid var(--gold-border);
+  color:var(--gold);font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--radius-full)}
 
-/* Upload zone */
-.upload-zone{border:2px dashed var(--border2);border-radius:var(--rs);padding:22px;text-align:center;
-  cursor:pointer;transition:all .2s}
-.upload-zone:hover,.upload-zone.drag{border-color:rgba(139,92,246,.5);background:rgba(139,92,246,.05)}
-.upload-zone input{display:none}
-.file-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-.chip{display:flex;align-items:center;gap:5px;background:var(--surface);
-  border:1px solid var(--border2);border-radius:5px;padding:4px 9px;font-size:10px;color:var(--text2)}
-.chip .rm{cursor:pointer;color:var(--text3)}
-.chip .rm:hover{color:var(--red)}
+/* ═══ SOURCE DOCS ═══ */
+.src-list{display:flex;flex-direction:column;gap:6px}
+.src-folder-group{margin-bottom:6px}
+.src-folder-header{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .15s;user-select:none}
+.src-folder-header:hover{border-color:var(--primary);background:var(--primary-light)}
+.src-folder-icon{font-size:14px}.src-folder-name{font-size:11px;font-weight:600;color:var(--text2);flex:1}
+.src-folder-count{font-size:10px;font-weight:700;background:var(--primary-light);
+  color:var(--primary);padding:2px 8px;border-radius:var(--radius-full)}
+.src-folder-chevron{font-size:10px;color:var(--text4);transition:transform .2s}
+.src-folder-body{padding:6px 0 0 8px;display:flex;flex-direction:column;gap:4px}
+.src-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 12px;position:relative;transition:all .15s}
+.src-card:hover{border-color:var(--border2);box-shadow:var(--shadow-sm)}
+.src-name{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.src-meta{font-size:10px;color:var(--text4);font-family:'DM Mono',monospace}
+.src-del,.src-action-btn{background:none;border:none;color:var(--text4);cursor:pointer;
+  font-size:11px;opacity:0;transition:all .15s;padding:2px}
+.src-card:hover .src-del,.src-card:hover .src-action-btn{opacity:1}
+.src-del:hover{color:var(--red) !important}
+.src-action-btn:hover{color:var(--primary) !important}
 
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 15px;border-radius:var(--rs);
-  font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:600;
-  cursor:pointer;border:none;transition:all .2s}
+/* ═══ SOURCE PICKER MODAL ═══ */
+.src-check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .15s}
+.src-check-item:hover{border-color:var(--primary);background:var(--primary-light)}
+.src-check-item.selected{border-color:var(--primary);background:var(--primary-light)}
+.src-check-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);
+  flex-shrink:0;margin-top:1px;cursor:pointer;border-radius:3px}
+.src-check-name{font-size:11px;font-weight:600;color:var(--text2)}
+.src-check-meta{font-size:10px;color:var(--text4);margin-top:2px;font-family:'DM Mono',monospace}
+
+/* ═══ BUTTONS ═══ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius-sm);
+  font-family:'Lexend',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;border:none;transition:all .2s;letter-spacing:0}
 .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
-.btn-ghost:hover{border-color:var(--border);color:var(--text);background:var(--bg3)}
-.btn-ai{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;box-shadow:0 0 14px rgba(139,92,246,.25)}
-.btn-ai:hover:not(:disabled){box-shadow:0 0 22px rgba(139,92,246,.45);transform:translateY(-1px)}
-.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 14px rgba(0,180,216,.25)}
-.btn-primary:hover:not(:disabled){box-shadow:0 0 22px rgba(0,180,216,.45);transform:translateY(-1px)}
-.btn-green{background:linear-gradient(135deg,#059669,#065f46);color:#fff}
-.btn-green:hover:not(:disabled){box-shadow:0 0 20px rgba(6,214,160,.35);transform:translateY(-1px)}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important;box-shadow:none !important}
+.btn-ghost:hover{border-color:var(--text4);color:var(--text);background:var(--surface-hover)}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:var(--shadow-glow)}
+.btn-primary:hover:not(:disabled){background:var(--primary-dark);box-shadow:0 0 32px rgba(26,86,219,.2);transform:translateY(-1px)}
+.btn-ai{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:var(--shadow-glow)}
+.btn-ai:hover:not(:disabled){box-shadow:0 0 32px rgba(26,86,219,.25);transform:translateY(-1px)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover:not(:disabled){background:#047857;box-shadow:0 0 20px rgba(5,150,105,.25);transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none !important;box-shadow:none !important}
 
-/* Pipeline steps */
-.pipeline{display:flex;flex-direction:column;gap:14px}
-.step{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);overflow:hidden;transition:border-color .3s}
-.step.active{border-color:rgba(139,92,246,.4)}
-.step.done{border-color:rgba(6,214,160,.3)}
-.step.err{border-color:rgba(239,71,111,.35)}
-.step.waiting{border-color:rgba(244,162,89,.35)}
-
-.step-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px}
-.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;
-  background:var(--bg);border:1px solid var(--border2);color:var(--text3);flex-shrink:0;transition:all .3s}
-.step.active .step-num{background:rgba(139,92,246,.2);border-color:var(--purple);color:var(--purple)}
-.step.done .step-num{background:rgba(6,214,160,.15);border-color:var(--green);color:var(--green)}
-.step.err .step-num{background:rgba(239,71,111,.15);border-color:var(--red);color:var(--red)}
-.step.waiting .step-num{background:rgba(244,162,89,.1);border-color:var(--gold);color:var(--gold)}
-.step-info{flex:1}.step-name{font-size:13px;font-weight:600}.step-desc{font-size:11px;color:var(--text3);margin-top:1px}
-.sbadge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px}
-.sb-idle{background:var(--bg);border:1px solid var(--border2);color:var(--text3)}
-.sb-run{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:var(--purple)}
-.sb-done{background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.25);color:var(--green)}
-.sb-err{background:rgba(239,71,111,.1);border:1px solid rgba(239,71,111,.25);color:var(--red)}
-.sb-wait{background:rgba(244,162,89,.1);border:1px solid rgba(244,162,89,.2);color:var(--gold)}
-
-.step-body{padding:0 18px 16px;display:none}
+/* ═══ PIPELINE STEPS ═══ */
+.pipeline{display:flex;flex-direction:column;gap:12px}
+.step{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;transition:all .3s}
+.step.active{border-color:rgba(26,86,219,.25);box-shadow:var(--shadow-glow)}
+.step.done{border-color:var(--green-border)}
+.step.err{border-color:var(--red-border)}
+.step.waiting{border-color:var(--gold-border)}
+.step-hdr{display:flex;align-items:center;gap:14px;padding:16px 20px}
+.step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;font-family:'DM Mono',monospace;
+  background:var(--bg2);border:1.5px solid var(--border2);color:var(--text3);flex-shrink:0;transition:all .3s}
+.step.active .step-num{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.step.done .step-num{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.step.err .step-num{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.step.waiting .step-num{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+.step-info{flex:1}
+.step-name{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.step-desc{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400}
+.sbadge{font-size:10px;font-weight:700;padding:4px 12px;border-radius:var(--radius-full);letter-spacing:.2px}
+.sb-idle{background:var(--bg2);color:var(--text4)}
+.sb-run{background:var(--primary-light);color:var(--primary)}
+.sb-done{background:var(--green-soft);border:1px solid var(--green-border);color:var(--green)}
+.sb-err{background:var(--red-soft);border:1px solid var(--red-border);color:var(--red)}
+.sb-wait{background:var(--gold-soft);border:1px solid var(--gold-border);color:var(--gold)}
+.step-body{padding:0 20px 18px;display:none}
 .step.active .step-body,.step.done .step-body,.step.err .step-body,.step.waiting .step-body{display:block}
 
-/* Progress bar */
-.pbar{height:3px;background:var(--border2);border-radius:2px;margin:10px 0;overflow:hidden}
-.pbar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--accent));transition:width .4s}
+/* ═══ PROGRESS BAR ═══ */
+.pbar{height:4px;background:var(--bg2);border-radius:var(--radius-full);margin:12px 0;overflow:hidden}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));
+  transition:width .5s ease;border-radius:var(--radius-full)}
 
-/* Source previews */
-.src-preview{background:var(--bg);border:1px solid var(--border2);border-radius:6px;
-  padding:8px 10px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;
-  max-height:100px;overflow-y:auto;margin-top:6px;white-space:pre-wrap;line-height:1.6}
+/* ═══ LOG ═══ */
+.log{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 14px;font-size:11px;font-family:'DM Mono',monospace;
+  max-height:150px;overflow-y:auto;color:var(--text2);line-height:2;margin-top:8px}
+.ok{color:var(--green)}.warn{color:var(--gold)}.info{color:var(--primary)}.err{color:var(--red)}
 
-/* Log */
-.log{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);
-  padding:8px 10px;font-size:10px;font-family:'JetBrains Mono',monospace;
-  max-height:140px;overflow-y:auto;color:var(--text2);line-height:1.9;margin-top:8px}
-.ok{color:var(--green)}.warn{color:var(--gold)}.info{color:var(--accent)}.err{color:var(--red)}
+/* ═══ REVIEW CARDS ═══ */
+.sum-bar{display:flex;gap:16px;padding:12px 16px;background:var(--bg);
+  border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px}
+.sum-stat{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rev-list{display:flex;flex-direction:column;gap:10px}
+.rev-item{background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;transition:all .2s}
+.rev-item:hover{box-shadow:var(--shadow-sm)}
+.rev-item.h{border-left:3px solid var(--green)}
+.rev-item.m{border-left:3px solid var(--gold)}
+.rev-item.l{border-left:3px solid var(--red)}
+.rev-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.rev-idx{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:var(--primary);
+  background:var(--primary-light);padding:2px 8px;border-radius:var(--radius-xs);flex-shrink:0;margin-top:1px}
+.rev-ctx{font-size:11px;color:var(--text3);flex:1;line-height:1.6}
+.rev-conf{font-size:10px;font-weight:700;padding:3px 10px;border-radius:var(--radius-full);flex-shrink:0}
+.h .rev-conf{background:var(--green-soft);color:var(--green);border:1px solid var(--green-border)}
+.m .rev-conf{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold-border)}
+.l .rev-conf{background:var(--red-soft);color:var(--red);border:1px solid var(--red-border)}
+.rev-ta{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Lexend',sans-serif;font-size:12px;font-weight:400;
+  padding:10px 12px;resize:none;min-height:40px;outline:none;transition:all .2s;
+  line-height:1.7;overflow:hidden;box-sizing:border-box}
+.rev-ta:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,86,219,.08)}
+.rev-ta:disabled,.rev-ta.locked{background:var(--bg2);color:var(--text2);cursor:default;border-color:var(--border)}
+.rev-reason{font-size:11px;color:var(--text4);margin-top:8px;padding-left:2px}
 
-/* Review */
-.sum-bar{display:flex;gap:14px;padding:8px 12px;background:var(--surface);border-radius:var(--rs);margin-bottom:12px;flex-wrap:wrap}
-.sum-stat{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
-.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.rev-list{display:flex;flex-direction:column;gap:8px}
-.rev-item{background:var(--bg);border:1px solid var(--border2);border-left:3px solid transparent;
-  border-radius:var(--rs);padding:10px 12px}
-.rev-item.h{border-left-color:var(--green)}
-.rev-item.m{border-left-color:var(--gold)}
-.rev-item.l{border-left-color:var(--red)}
-.rev-top{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
-.rev-idx{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--accent);
-  background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.2);padding:1px 5px;border-radius:3px;flex-shrink:0;margin-top:1px}
-.rev-ctx{font-size:11px;color:var(--text3);flex:1;line-height:1.5}
-.rev-conf{font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;flex-shrink:0}
-.h .rev-conf{background:rgba(6,214,160,.1);color:var(--green)}
-.m .rev-conf{background:rgba(244,162,89,.1);color:var(--gold)}
-.l .rev-conf{background:rgba(239,71,111,.1);color:var(--red)}
-.rev-ta{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
-  color:var(--text);font-family:'Be Vietnam Pro',sans-serif;font-size:12px;
-  padding:7px 9px;resize:none;min-height:36px;outline:none;transition:border-color .2s,background .2s;
-  line-height:1.6;overflow:hidden;box-sizing:border-box}
-.rev-ta:focus{border-color:rgba(0,180,216,.4)}
-.rev-ta:disabled{background:var(--bg3);color:var(--text2);cursor:default;
-  border-color:var(--border2);opacity:1}
-.rev-ta.locked{background:var(--bg3);color:var(--text2);cursor:not-allowed;
-  border-color:var(--border2)}
-.rev-reason{font-size:10px;color:var(--text3);margin-top:4px;font-style:italic}
-
-/* Dual view cho mid/low */
-.block-toggle{display:flex;gap:0;border:1px solid var(--border2);border-radius:5px;
-  overflow:hidden;margin-bottom:8px;width:fit-content}
-.block-toggle-btn{padding:5px 12px;font-size:10px;font-weight:600;cursor:pointer;
-  background:var(--bg3);border:none;color:var(--text3);transition:all .15s;font-family:inherit}
-.block-toggle-btn.active{background:var(--accent);color:#fff}
-.block-mode-note{font-size:9px;color:var(--text3);margin-bottom:6px;font-style:italic}
-
-/* Run history */
-.run-list{display:flex;flex-direction:column;gap:6px}
-.run-item{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
+/* ═══ RUN HISTORY ═══ */
+.run-list{display:flex;flex-direction:column;gap:5px}
+.run-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s}
-.run-item:hover{border-color:var(--border);background:var(--surface)}
-.run-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3)}
-.run-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
-.rs-done{background:rgba(6,214,160,.1);color:var(--green);border:1px solid rgba(6,214,160,.2)}
-.rs-reviewing{background:rgba(244,162,89,.1);color:var(--gold);border:1px solid rgba(244,162,89,.2)}
-.rs-error{background:rgba(239,71,111,.1);color:var(--red);border:1px solid rgba(239,71,111,.2)}
-.rs-other{background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.2)}
+.run-item:hover{border-color:var(--border2);background:var(--surface-hover);box-shadow:var(--shadow-sm)}
+.run-id{font-family:'DM Mono',monospace;font-size:10px;color:var(--text4)}
+.run-status{font-size:10px;font-weight:700;padding:3px 10px;border-radius:var(--radius-full)}
+.rs-done{background:var(--green-soft);color:var(--green);border:1px solid var(--green-border)}
+.rs-reviewing{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold-border)}
+.rs-error{background:var(--red-soft);color:var(--red);border:1px solid var(--red-border)}
+.rs-other{background:var(--primary-light);color:var(--primary)}
 
-/* Sidebar tabs */
-.sidebar-tabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border2)}
-.stab{flex:1;padding:7px 4px;font-size:10px;font-weight:700;text-align:center;
-  cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;
-  transition:all .15s;letter-spacing:.5px;text-transform:uppercase}
-.stab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.stab:hover:not(.active){color:var(--text2)}
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 18px;font-size:12px;font-weight:500;z-index:1000;
+  display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-lg);
+  animation:slideUp .35s cubic-bezier(.4,0,.2,1);max-width:380px;backdrop-filter:blur(12px)}
+.toast.success{border-color:var(--green-border);color:var(--green)}
+.toast.error{border-color:var(--red-border);color:var(--red)}
+.toast.info{border-color:rgba(26,86,219,.2);color:var(--primary)}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-/* Source docs list */
-.src-list{display:flex;flex-direction:column;gap:6px}
-.src-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
-  padding:10px 12px;cursor:default;transition:all .2s;position:relative}
-.src-card:hover{border-color:var(--border)}
-.src-name{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
-.src-meta{font-size:9px;color:var(--text3);font-family:monospace}
-.src-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:all .15s}
-.src-card:hover .src-del{opacity:1}
-.src-del:hover{color:var(--red) !important}
-.src-action-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:all .15s}
-.src-card:hover .src-action-btn{opacity:1}
-.src-action-btn:hover{color:var(--accent) !important}
-
-/* Folder groups */
-.src-folder-group{margin-bottom:8px}
-.src-folder-header{display:flex;align-items:center;gap:6px;padding:7px 10px;
-  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);
-  cursor:pointer;transition:all .15s;user-select:none}
-.src-folder-header:hover{border-color:var(--accent);background:rgba(0,120,212,.06)}
-.src-folder-icon{font-size:13px}
-.src-folder-name{font-size:11px;font-weight:700;color:var(--text2);flex:1}
-.src-folder-count{font-size:9px;font-weight:700;background:rgba(0,120,212,.12);
-  color:var(--accent);padding:1px 6px;border-radius:8px}
-.src-folder-chevron{font-size:10px;color:var(--text3);transition:all .2s}
-.src-folder-body{padding-top:5px;display:flex;flex-direction:column;gap:5px}
-
-/* Checkbox list in step 2 */
-.src-check-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;
-  background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
-  cursor:pointer;transition:all .15s}
-.src-check-item:hover{border-color:var(--accent);background:var(--surface)}
-.src-check-item.selected{border-color:var(--accent);background:rgba(0,119,182,.07)}
-.src-check-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);
-  flex-shrink:0;margin-top:1px;cursor:pointer}
-.src-check-name{font-size:11px;font-weight:600;color:var(--text2)}
-.src-check-meta{font-size:9px;color:var(--text3);margin-top:1px;font-family:monospace}
-.src-group-label{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1px;
-  text-transform:uppercase;margin:10px 0 5px;padding-left:2px}
-
-/* Toast */
-.toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--rs);padding:10px 16px;font-size:12px;font-weight:500;z-index:1000;
-  display:flex;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(0,0,0,.5);
-  animation:slideUp .3s ease;max-width:360px}
-.toast.success{border-color:rgba(6,214,160,.4);color:var(--green)}
-.toast.error{border-color:rgba(239,71,111,.4);color:var(--red)}
-.toast.info{border-color:rgba(0,180,216,.3);color:var(--accent)}
-@keyframes slideUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-
-
-.spin{width:12px;height:12px;border:2px solid rgba(139,92,246,.3);border-top-color:var(--purple);
-  border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+/* ═══ SPINNER ═══ */
+.spin{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--primary);
+  border-radius:50%;animation:sp .6s linear infinite;display:inline-block}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* ═══ HERO (empty state) ═══ */
+.hero-avatar{width:80px;height:80px;display:block;object-fit:contain;margin:0 auto 18px;
+  filter:drop-shadow(0 12px 24px rgba(26,86,219,.15));opacity:.85}
+
+/* ═══ UPLOAD ZONE ═══ */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:24px;
+  text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--primary);background:var(--primary-light)}
+.upload-zone input{display:none}
+.file-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:var(--radius-full);padding:4px 12px;font-size:11px;color:var(--text2)}
+.chip .rm{cursor:pointer;color:var(--text4);font-size:13px;line-height:1}
+.chip .rm:hover{color:var(--red)}
+
+/* ═══ FOOTER ═══ */
+footer{margin-top:48px;padding:18px 32px;border-top:1px solid var(--border);
+  text-align:center;font-size:11px;color:var(--text4);background:var(--bg)}
+footer strong{color:var(--text3);font-weight:600}
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--text4)}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.pipeline .step{animation:fadeIn .4s ease both}
+.pipeline .step:nth-child(2){animation-delay:.05s}
+.pipeline .step:nth-child(3){animation-delay:.1s}
+.pipeline .step:nth-child(4){animation-delay:.15s}
+.pipeline .step:nth-child(5){animation-delay:.2s}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <div class="logo"><img src="./static/bidv_icon_bot.png" alt="BIDV bot avatar"></div>
+  <div class="logo"><img src="./static/bidv_icon_bot.png" alt="BIDV"></div>
   <div class="htext">
     <h1>BIDV Report AI Agent</h1>
-    <p>LangGraph Pipeline · PostgreSQL · Docker</p>
+    <p>Multi-Agent Pipeline · LangGraph · GPT-4o</p>
   </div>
   <div class="badge">
     <div class="dot-live" id="serverDot" title="Server status"></div>
-    <span>LangGraph v2</span>
+    <span>Multi-Agent v3</span>
   </div>
 </header>
 
 <div class="layout">
 
-  <!-- ── Sidebar ── -->
+  <!-- ═══ Sidebar ═══ -->
   <div class="sidebar">
-    <!-- Tabs -->
     <div class="sidebar-tabs">
       <div class="stab active" id="tab-tmpl" onclick="switchSidebarTab('tmpl')">📋 Templates</div>
       <div class="stab" id="tab-src" onclick="switchSidebarTab('src')">📂 Tài liệu</div>
       <div class="stab" id="tab-runs" onclick="switchSidebarTab('runs')">🕒 Lịch sử</div>
     </div>
 
-    <!-- Panel: Templates -->
     <div id="panel-tmpl">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div class="slabel" style="margin-bottom:0">Templates</div>
-        <button onclick="clearAllTemplates()" title="Xóa toàn bộ templates"
-          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;
-          padding:2px 6px;border-radius:4px;transition:all .15s"
-          onmouseover="this.style.color='var(--red)';this.style.background='rgba(239,71,111,.1)'"
-          onmouseout="this.style.color='var(--text3)';this.style.background='none'">
-          🗑 Xóa hết
-        </button>
+        <div class="slabel" style="margin-bottom:0">📋 Templates</div>
+        <button onclick="clearAllTemplates()" title="Xóa toàn bộ"
+          style="background:none;border:none;color:var(--text4);cursor:pointer;font-size:11px;
+          padding:3px 8px;border-radius:var(--radius-xs);transition:all .15s;font-family:inherit"
+          onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'"
+          onmouseout="this.style.color='var(--text4)';this.style.background='none'">🗑 Xóa hết</button>
       </div>
       <div class="tmpl-list" id="tmplList">
-        <div style="color:var(--text3);font-size:11px;padding:8px">Đang tải...</div>
+        <div style="color:var(--text4);font-size:11px;padding:12px 0">Đang tải...</div>
       </div>
     </div>
 
-    <!-- Panel: Tài liệu nguồn -->
     <div id="panel-src" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div class="slabel" style="margin-bottom:0">Tài liệu nguồn</div>
-        <button onclick="clearAllSources()" title="Xóa toàn bộ tài liệu nguồn"
-          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;
-          padding:2px 6px;border-radius:4px;transition:all .15s"
-          onmouseover="this.style.color='var(--red)';this.style.background='rgba(239,71,111,.1)'"
-          onmouseout="this.style.color='var(--text3)';this.style.background='none'">
-          🗑 Xóa hết
-        </button>
+        <button onclick="clearAllSources()" title="Xóa toàn bộ"
+          style="background:none;border:none;color:var(--text4);cursor:pointer;font-size:11px;
+          padding:3px 8px;border-radius:var(--radius-xs);transition:all .15s;font-family:inherit"
+          onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'"
+          onmouseout="this.style.color='var(--text4)';this.style.background='none'">🗑 Xóa hết</button>
       </div>
       <div class="src-list" id="srcList">
-        <div style="color:var(--text3);font-size:11px;padding:8px">Đang tải...</div>
+        <div style="color:var(--text4);font-size:11px;padding:12px 0">Đang tải...</div>
       </div>
-      <button class="btn btn-ghost" style="width:100%;margin-top:8px;justify-content:center;font-size:11px"
-        onclick="showUploadSource()">+ Upload Tài liệu nguồn</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:10px;justify-content:center;font-size:11px"
+        onclick="showUploadSource()">+ Upload tài liệu nguồn</button>
     </div>
 
-    <!-- Panel: Lịch sử -->
     <div id="panel-runs" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div class="slabel" style="margin-bottom:0">Lịch sử runs</div>
-        <button onclick="clearAllRuns()" title="Xóa toàn bộ lịch sử"
-          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;
-          padding:2px 6px;border-radius:4px;transition:all .15s"
-          onmouseover="this.style.color='var(--red)';this.style.background='rgba(239,71,111,.1)'"
-          onmouseout="this.style.color='var(--text3)';this.style.background='none'">
-          🗑 Xóa hết
-        </button>
+        <button onclick="clearAllRuns()" title="Xóa toàn bộ"
+          style="background:none;border:none;color:var(--text4);cursor:pointer;font-size:11px;
+          padding:3px 8px;border-radius:var(--radius-xs);transition:all .15s;font-family:inherit"
+          onmouseover="this.style.color='var(--red)';this.style.background='var(--red-soft)'"
+          onmouseout="this.style.color='var(--text4)';this.style.background='none'">🗑 Xóa hết</button>
       </div>
       <div class="run-list" id="runList">
-        <div style="color:var(--text3);font-size:11px;padding:4px">Chưa có run nào</div>
+        <div style="color:var(--text4);font-size:11px;padding:8px 0">Chưa có run nào</div>
       </div>
     </div>
   </div>
 
-  <!-- ── Main content ── -->
+  <!-- ═══ Main Content ═══ -->
   <div id="mainContent">
-    <div style="text-align:center;padding:60px 20px;color:var(--text3)">
+    <div style="text-align:center;padding:80px 20px;color:var(--text3)">
       <img class="hero-avatar" src="./static/bidv_icon_bot.png" alt="BIDV bot avatar">
-      <div style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:8px">Chọn một template để bắt đầu</div>
-      <div style="font-size:12px;max-width:380px;margin:0 auto;line-height:1.7">
-        Pipeline sẽ tự động: phân tích template → trích xuất tài liệu nguồn → AI điền nội dung → bạn review → xuất file
+      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.02em">
+        Chọn một template để bắt đầu</div>
+      <div style="font-size:12px;max-width:420px;margin:0 auto;line-height:1.8;color:var(--text3)">
+        Multi-Agent Pipeline: Researcher trích xuất &rarr; Writer viết nội dung &rarr; Verifier kiểm tra &rarr; Editor sửa lỗi &rarr; Bạn review &rarr; Xuất file
       </div>
     </div>
   </div>
 
 </div>
-</div><!-- /wrap -->
+</div>
+
+<!-- ═══ Preview Modal ═══ -->
+<div id="previewModal" style="display:none;position:fixed;inset:0;z-index:1000;background:#1e1e1e">
+  <div style="height:52px;background:#151515;border-bottom:1px solid #333;display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <div style="width:28px;height:28px;background:var(--primary);border-radius:5px;
+        display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">&#128196;</div>
+      <div style="overflow:hidden">
+        <div id="previewTemplateName" style="font-size:12px;font-weight:600;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div style="font-size:10px;color:#777">Xem trước báo cáo</div>
+      </div>
+    </div>
+    <div id="previewStats" style="display:flex;gap:8px;margin-left:auto;margin-right:auto"></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <input type="hidden" id="previewExportMode" value="clean">
+      <button onclick="downloadFromPreview()" style="display:flex;align-items:center;gap:6px;background:var(--primary);border:none;
+        color:#fff;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Lexend',sans-serif">⬇ Tải xuống</button>
+      <div id="previewDlResult" style="font-size:10px;color:#999"></div>
+      <button onclick="closePreview()" style="background:none;border:1px solid #444;color:#999;width:30px;height:30px;
+        border-radius:6px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#10005;</button>
+    </div>
+  </div>
+  <div style="height:calc(100vh - 52px);overflow-y:auto;background:#3a3a3a;padding:32px 0" id="previewScrollArea">
+    <div id="previewContent" style="max-width:794px;margin:0 auto"></div>
+  </div>
+</div>
+
+<footer>
+  &copy; 2025 <strong>Nhóm NCCN</strong> &mdash; Ban Công nghệ &nbsp;|&nbsp;
+  BIDV Report AI Agent &nbsp;|&nbsp; Multi-Agent &middot; LangGraph &middot; GPT-4o
+</footer>
 
 <script>
 const API = '/api';
-let templates   = [];
-let selTmplId   = null;
-let currentRun  = null;
-let pollTimer   = null;
-let pendingFiles= [];
-let uploadedSrcIds = [];
-let uploadedDocs   = [];
+let templates = [], selTmplId = null, currentRun = null, pollTimer = null;
+let pendingFiles = [], uploadedSrcIds = [], uploadedDocs = [], allSourceDocs = [];
 
-// ═══════════════════════════════════════════════════════════
-// INIT & SIDEBAR
-// ═══════════════════════════════════════════════════════════
 function switchSidebarTab(tab) {
   ['tmpl','src','runs'].forEach(t => {
-    document.getElementById(`tab-${t}`).classList.toggle('active', t===tab);
-    document.getElementById(`panel-${t}`).style.display = t===tab ? 'block' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('panel-'+t).style.display = t===tab ? 'block' : 'none';
   });
   if (tab === 'src') loadSourceDocs();
   if (tab === 'runs') loadRuns();
 }
 
-let allSourceDocs = [];
-
 async function loadSourceDocs() {
-  try {
-    const r = await fetch(`${API}/sources`);
-    if (!r.ok) return;
-    allSourceDocs = await r.json();
-    renderSrcList();
-  } catch {}
+  try { const r = await fetch(API+'/sources'); if(!r.ok) return; allSourceDocs = await r.json(); renderSrcList(); } catch{}
 }
 
 function renderSrcList() {
   const el = document.getElementById('srcList');
-  if (!allSourceDocs.length) {
-    el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">Chưa có tài liệu nào trong DB.</div>';
-    return;
-  }
-
-  // Nhóm theo folder
+  if (!allSourceDocs.length) { el.innerHTML = '<div style="color:var(--text4);font-size:11px;padding:12px 0">Chưa có tài liệu nào.</div>'; return; }
   const groups = {};
-  allSourceDocs.forEach(d => {
-    const f = d.folder || 'Chưa phân loại';
-    if (!groups[f]) groups[f] = [];
-    groups[f].push(d);
-  });
-
+  allSourceDocs.forEach(d => { const f = d.folder || 'Chưa phân loại'; if(!groups[f]) groups[f]=[]; groups[f].push(d); });
   el.innerHTML = Object.entries(groups).map(([folder, docs], idx) => {
-    const fid = 'folder-' + idx;
-    return `
-    <div class="src-folder-group">
-      <!-- Folder header -->
+    const fid = 'folder-'+idx;
+    return `<div class="src-folder-group">
       <div class="src-folder-header" onclick="toggleFolder('${fid}')">
-        <span class="src-folder-icon">📁</span>
+        <span class="src-folder-icon">&#128193;</span>
         <span class="src-folder-name">${folder}</span>
         <span class="src-folder-count">${docs.length}</span>
-        <span class="src-folder-chevron" id="chev-${fid}">▾</span>
+        <span class="src-folder-chevron" id="chev-${fid}">&#9662;</span>
       </div>
-      <!-- Folder body -->
       <div class="src-folder-body" id="${fid}">
-        ${docs.map(d => `
-          <div class="src-card" style="margin-left:8px">
-            <div style="position:absolute;top:6px;right:6px;display:flex;gap:3px">
-              <button class="src-action-btn" title="Chuyển folder"
-                onclick="moveSrcDoc('${d.id}','${d.filename.replace(/'/g,"\\'")}','${folder.replace(/'/g,"\\'")}')">📂</button>
-              <button class="src-del"
-                onclick="deleteSourceDoc('${d.id}','${d.filename.replace(/'/g,"\\'")}')">🗑</button>
-            </div>
-            <div class="src-name" title="${d.filename}">
-              ${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'} ${d.filename}
-            </div>
-            <div class="src-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
-            ${d.used_in_templates?.length
-              ? `<div class="src-meta" style="margin-top:2px;color:var(--accent)">📋 ${d.used_in_templates.join(', ')}</div>`
-              : ''}
-          </div>`).join('')}
+        ${docs.map(d => `<div class="src-card">
+          <div style="position:absolute;top:6px;right:6px;display:flex;gap:3px">
+            <button class="src-action-btn" onclick="moveSrcDoc('${d.id}','${d.filename.replace(/'/g,"\\'")}','${folder.replace(/'/g,"\\'")}')">&#128193;</button>
+            <button class="src-del" onclick="deleteSourceDoc('${d.id}','${d.filename.replace(/'/g,"\\'")}')">&#128465;</button>
+          </div>
+          <div class="src-name" title="${d.filename}">${d.filename}</div>
+          <div class="src-meta">${(d.file_size/1024).toFixed(1)} KB &middot; ${(d.text_len||0).toLocaleString()} chars</div>
+        </div>`).join('')}
       </div>
-    </div>`;
-  }).join('');
+    </div>`}).join('');
 }
 
-function toggleFolder(fid) {
-  const body = document.getElementById(fid);
-  const chev = document.getElementById('chev-' + fid);
-  if (!body) return;
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'flex';
-  if (chev) chev.textContent = isOpen ? '▸' : '▾';
-}
+function toggleFolder(fid) { const b=document.getElementById(fid),c=document.getElementById('chev-'+fid); if(!b)return; const o=b.style.display!=='none'; b.style.display=o?'none':'flex'; if(c)c.innerHTML=o?'&#9656;':'&#9662;'; }
 
 async function moveSrcDoc(id, filename, currentFolder) {
-  const folders = [...new Set(allSourceDocs.map(d => d.folder || 'Chưa phân loại'))];
-  const newFolder = prompt(
-    `Chuyển "${filename}" sang folder:\n(Có sẵn: ${folders.join(', ')})`,
-    currentFolder
-  );
-  if (!newFolder || newFolder.trim() === currentFolder) return;
-  try {
-    const r = await fetch(`${API}/sources/${id}/folder`, {
-      method:'PATCH', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ folder: newFolder.trim() })
-    });
-    if (!r.ok) throw new Error(await r.text());
-    toast(`✅ Đã chuyển sang folder "${newFolder.trim()}"`, 'success');
-    await loadSourceDocs();
-  } catch(e) { toast('Lỗi: '+e.message, 'error'); }
+  const folders=[...new Set(allSourceDocs.map(d=>d.folder||'Chưa phân loại'))];
+  const nf=prompt('Chuyển "'+filename+'" sang folder:\n(Co san: '+folders.join(', ')+')', currentFolder);
+  if(!nf||nf.trim()===currentFolder) return;
+  try { const r=await fetch(API+'/sources/'+id+'/folder',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder:nf.trim()})}); if(!r.ok) throw new Error(await r.text()); toast('Đã chuyển folder','success'); await loadSourceDocs(); } catch(e){toast('Lỗi: '+e.message,'error');}
 }
 
-async function deleteSourceDoc(id, name) {
-  if (!confirm(`Xóa tài liệu "${name}"?`)) return;
-  try {
-    const r = await fetch(`${API}/sources/${id}`, { method:'DELETE' });
-    if (!r.ok) throw new Error(await r.text());
-    toast('Đã xóa tài liệu', 'success');
-    await loadSourceDocs();
-  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
-}
+async function deleteSourceDoc(id,name) { if(!confirm('Xóa tài liệu "'+name+'"?')) return; try{const r=await fetch(API+'/sources/'+id,{method:'DELETE'}); if(!r.ok) throw new Error(await r.text()); toast('Đã xóa','success'); await loadSourceDocs();}catch(e){toast('Lỗi: '+e.message,'error');} }
 
 function showUploadSource() {
-  // Lấy danh sách folder hiện có
-  const existingFolders = [...new Set(allSourceDocs.map(d => d.folder || 'Chưa phân loại'))];
-
-  // Hiện modal upload có input folder
-  const overlay = document.createElement('div');
-  overlay.id = 'uploadSrcModal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center';
-  overlay.innerHTML = `
-    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
-      padding:24px;min-width:360px;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
-      <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--text)">📂 Upload Tài liệu Nguồn</div>
-
-      <div style="margin-bottom:12px">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">Folder lưu trữ</div>
-        <input id="uploadSrcFolder" type="text" list="folderDatalist"
-          placeholder="Nhập tên folder hoặc chọn có sẵn..."
-          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);
-          color:var(--text);font-size:12px;padding:8px 11px;outline:none">
-        <datalist id="folderDatalist">
-          ${existingFolders.map(f=>`<option value="${f}">`).join('')}
-        </datalist>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-          ${existingFolders.map(f=>`
-            <button onclick="document.getElementById('uploadSrcFolder').value='${f.replace(/'/g,"\'")}'"
-              style="font-size:9px;padding:2px 8px;background:rgba(0,120,212,.1);border:1px solid rgba(0,120,212,.2);
-              color:var(--accent);border-radius:8px;cursor:pointer">📁 ${f}</button>`).join('')}
-        </div>
-      </div>
-
-      <div style="margin-bottom:16px">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">Chọn file</div>
-        <div style="border:2px dashed var(--border2);border-radius:var(--rs);padding:16px;text-align:center;cursor:pointer"
-          onclick="document.getElementById('uploadSrcFileInput').click()">
-          <div style="font-size:20px;margin-bottom:4px">📁</div>
-          <div style="font-size:11px;color:var(--text2)">Click để chọn file</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">PDF · DOCX · TXT · XLSX</div>
-        </div>
-        <input type="file" id="uploadSrcFileInput" multiple accept=".pdf,.docx,.doc,.txt,.xlsx,.xls" style="display:none"
-          onchange="updateUploadSrcPreview(this)">
-        <div id="uploadSrcFileList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
-      </div>
-
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-ghost" onclick="document.getElementById('uploadSrcModal').remove()">Hủy</button>
-        <button class="btn btn-primary" onclick="doUploadSource()">📤 Upload</button>
-      </div>
-      <div id="uploadSrcResult" style="margin-top:8px"></div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  const existingFolders=[...new Set(allSourceDocs.map(d=>d.folder||'Chưa phân loại'))];
+  const ov=document.createElement('div'); ov.id='uploadSrcModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  ov.innerHTML=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:28px;min-width:380px;max-width:480px;box-shadow:var(--shadow-lg)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:20px;color:var(--text)">📂 Upload Tài liệu Nguồn</div>
+    <div style="margin-bottom:14px"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">Folder</div>
+      <input id="uploadSrcFolder" type="text" list="folderDatalist" placeholder="Nhập tên folder..."
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:10px 12px;outline:none;font-family:inherit">
+      <datalist id="folderDatalist">${existingFolders.map(f=>'<option value="'+f+'">').join('')}</datalist>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">${existingFolders.map(f=>'<button onclick="document.getElementById(\'uploadSrcFolder\').value=\''+f.replace(/'/g,"\\'")+'\'" style="font-size:10px;padding:3px 10px;background:var(--primary-light);border:none;color:var(--primary);border-radius:var(--radius-full);cursor:pointer;font-family:inherit;font-weight:500">'+f+'</button>').join('')}</div></div>
+    <div style="margin-bottom:18px"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">Chon file</div>
+      <div style="border:2px dashed var(--border2);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:all .2s" onclick="document.getElementById('uploadSrcFileInput').click()" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-light)'" onmouseout="this.style.borderColor='var(--border2)';this.style.background=''">
+        <div style="font-size:11px;color:var(--text2);font-weight:500">Click để chọn file</div>
+        <div style="font-size:10px;color:var(--text4);margin-top:3px">PDF, DOCX, TXT, XLSX</div></div>
+      <input type="file" id="uploadSrcFileInput" multiple accept=".pdf,.docx,.doc,.txt,.xlsx,.xls" style="display:none" onchange="updateUploadSrcPreview(this)">
+      <div id="uploadSrcFileList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="document.getElementById('uploadSrcModal').remove()">Hủy</button>
+      <button class="btn btn-primary" onclick="doUploadSource()">Upload</button></div>
+    <div id="uploadSrcResult" style="margin-top:10px"></div></div>`;
+  document.body.appendChild(ov); ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
 }
 
 function updateUploadSrcPreview(input) {
-  const el = document.getElementById('uploadSrcFileList');
-  el.innerHTML = [...input.files].map(f =>
-    `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--bg2);border-radius:4px;font-size:11px">
-      <span>${f.name.endsWith('.pdf')?'📄':f.name.match(/\.xlsx?$/i)?'📊':'📝'}</span>
-      <span style="flex:1;color:var(--text2)">${f.name}</span>
-      <span style="color:var(--text3);font-family:monospace">${(f.size/1024).toFixed(1)} KB</span>
-    </div>`).join('');
+  document.getElementById('uploadSrcFileList').innerHTML=[...input.files].map(f=>
+    '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-radius:var(--radius-xs);font-size:11px"><span style="flex:1;color:var(--text2)">'+f.name+'</span><span style="color:var(--text4);font-family:DM Mono,monospace">'+(f.size/1024).toFixed(1)+' KB</span></div>').join('');
 }
 
 async function doUploadSource() {
-  const folderInput = document.getElementById('uploadSrcFolder');
-  const fileInput   = document.getElementById('uploadSrcFileInput');
-  const resEl       = document.getElementById('uploadSrcResult');
-  const folder      = (folderInput?.value || '').trim() || 'Chưa phân loại';
-
-  if (!fileInput?.files.length) { toast('Chọn ít nhất 1 file', 'error'); return; }
-
-  resEl.innerHTML = '<div style="color:var(--text3);font-size:11px"><div class="spin"></div> Đang upload...</div>';
-  const form = new FormData();
-  [...fileInput.files].forEach(f => form.append('files', f));
-  form.append('folder', folder);
-
-  try {
-    const r = await fetch(`${API}/sources/upload`, { method:'POST', body:form });
-    if (!r.ok) throw new Error(await r.text());
-    const docs = await r.json();
-    resEl.innerHTML = `<div style="color:var(--green);font-size:11px">✅ Đã upload ${docs.length} tài liệu vào folder "${folder}"</div>`;
-    toast(`✅ Upload thành công vào "${folder}"`, 'success');
-    await loadSourceDocs();
-    setTimeout(() => document.getElementById('uploadSrcModal')?.remove(), 1500);
-  } catch(e) {
-    resEl.innerHTML = `<div style="color:var(--red);font-size:11px">✗ ${e.message}</div>`;
-  }
+  const fi=document.getElementById('uploadSrcFileInput'),res=document.getElementById('uploadSrcResult'),folder=(document.getElementById('uploadSrcFolder')?.value||'').trim()||'Chưa phân loại';
+  if(!fi?.files.length){toast('Chon it nhat 1 file','error');return;}
+  res.innerHTML='<div style="color:var(--text3);font-size:11px"><div class="spin"></div> Đang upload...</div>';
+  const form=new FormData(); [...fi.files].forEach(f=>form.append('files',f)); form.append('folder',folder);
+  try{const r=await fetch(API+'/sources/upload',{method:'POST',body:form}); if(!r.ok) throw new Error(await r.text()); const docs=await r.json();
+    res.innerHTML='<div style="color:var(--green);font-size:11px">Đã upload '+docs.length+' tài liệu</div>';
+    toast('Upload thành công','success'); await loadSourceDocs(); setTimeout(()=>document.getElementById('uploadSrcModal')?.remove(),1200);
+  }catch(e){res.innerHTML='<div style="color:var(--red);font-size:11px">'+e.message+'</div>';}
 }
 
-// ═══════════════════════════════════════════════════════════
-// SOURCE PICKER MODAL (Step 2)
-// ═══════════════════════════════════════════════════════════
 function openSrcPickerModal() {
-  // Tạo overlay modal
-  const overlay = document.createElement('div');
-  overlay.id = 'srcPickerModal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:flex;align-items:center;justify-content:center';
-
-  const folders = {};
-  allSourceDocs.forEach(d => {
-    const f = d.folder || 'Chưa phân loại';
-    if (!folders[f]) folders[f] = [];
-    folders[f].push(d);
-  });
-
-  const folderHTML = Object.keys(folders).length === 0
-    ? `<div style="color:var(--text3);font-size:12px;padding:20px;text-align:center">
-        Chưa có tài liệu nào trong kho.<br>
-        <button class="btn btn-ghost" style="margin-top:10px;font-size:11px"
-          onclick="document.getElementById('srcPickerModal').remove();showUploadSource()">
-          📤 Upload tài liệu mới
-        </button>
-       </div>`
-    : Object.entries(folders).map(([folder, docs], idx) => {
-        const fid = 'picker-folder-' + idx;
-        return `
-        <div class="src-folder-group" style="margin-bottom:6px">
-          <div class="src-folder-header" onclick="toggleFolder('${fid}')" style="padding:7px 12px">
-            <span class="src-folder-icon">📁</span>
-            <span class="src-folder-name">${folder}</span>
-            <span class="src-folder-count">${docs.length}</span>
-            <span id="chev-${fid}">▾</span>
-          </div>
-          <div class="src-folder-body" id="${fid}" style="padding-left:10px;padding-top:4px">
-            ${docs.map(d => {
-              const checked = uploadedSrcIds.includes(d.id) ? 'checked' : '';
-              return `
-              <label class="src-check-item" id="picker-lbl-${d.id}"
-                style="${checked ? 'border-color:var(--accent);background:rgba(0,119,182,.07)' : ''}">
-                <input type="checkbox" value="${d.id}" ${checked}
-                  onchange="onPickerCheck(this,'picker-lbl-${d.id}')">
-                <div style="min-width:0">
-                  <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'} ${d.filename}</div>
-                  <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
-                </div>
-              </label>`;
-            }).join('')}
-          </div>
-        </div>`;
-      }).join('');
-
-  overlay.innerHTML = `
-    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
-      width:480px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;
-      box-shadow:0 24px 64px rgba(0,0,0,.4);overflow:hidden">
-
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;
-        padding:14px 18px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--text)">📂 Chọn Tài liệu Nguồn</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:1px">Chọn tài liệu để AI tham khảo khi điền nội dung</div>
-        </div>
-        <button onclick="document.getElementById('srcPickerModal').remove()"
-          style="background:none;border:1px solid var(--border2);color:var(--text3);
-          width:28px;height:28px;border-radius:4px;font-size:14px;cursor:pointer">✕</button>
-      </div>
-
-      <!-- Folder list -->
-      <div style="flex:1;overflow-y:auto;padding:12px 14px">
-        ${folderHTML}
-      </div>
-
-      <!-- Footer -->
-      <div style="padding:12px 18px;border-top:1px solid var(--border2);background:var(--bg2);
-        display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px">
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn btn-ghost" style="font-size:11px"
-            onclick="showUploadSource()">📤 Upload mới</button>
-          <span id="pickerCount" style="font-size:11px;color:var(--text3)">0 đã chọn</span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost"
-            onclick="document.getElementById('srcPickerModal').remove()">Hủy</button>
-          <button class="btn btn-primary" onclick="confirmSrcPicker()">✓ Xác nhận</button>
-        </div>
-      </div>
-    </div>`;
-
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-
-  // Load fresh nếu chưa có
-  if (!allSourceDocs.length) {
-    fetch(`${API}/sources`).then(r=>r.json()).then(docs => {
-      allSourceDocs = docs;
-      document.getElementById('srcPickerModal')?.remove();
-      openSrcPickerModal();
-    });
-  }
-
+  const ov=document.createElement('div'); ov.id='srcPickerModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  const folders={}; allSourceDocs.forEach(d=>{const f=d.folder||'Chưa phân loại';if(!folders[f])folders[f]=[];folders[f].push(d);});
+  const fhtml=Object.keys(folders).length===0?'<div style="color:var(--text4);font-size:12px;padding:24px;text-align:center">Chưa có tài liệu nào.<br><button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="document.getElementById(\'srcPickerModal\').remove();showUploadSource()">Upload mới</button></div>'
+    :Object.entries(folders).map(([folder,docs],idx)=>{const fid='picker-folder-'+idx; return '<div class="src-folder-group" style="margin-bottom:6px"><div class="src-folder-header" onclick="toggleFolder(\''+fid+'\')" style="padding:8px 12px"><span class="src-folder-icon">&#128193;</span><span class="src-folder-name">'+folder+'</span><span class="src-folder-count">'+docs.length+'</span><span id="chev-'+fid+'">&#9662;</span></div><div class="src-folder-body" id="'+fid+'" style="padding-left:10px;padding-top:4px">'+docs.map(d=>{const ck=uploadedSrcIds.includes(d.id)?'checked':''; return '<label class="src-check-item" id="picker-lbl-'+d.id+'" style="'+(ck?'border-color:var(--primary);background:var(--primary-light)':'')+'"><input type="checkbox" value="'+d.id+'" '+ck+' onchange="onPickerCheck(this,\'picker-lbl-'+d.id+'\')"><div style="min-width:0"><div class="src-check-name">'+d.filename+'</div><div class="src-check-meta">'+(d.file_size/1024).toFixed(1)+' KB &middot; '+(d.text_len||0).toLocaleString()+' ký tự</div></div></label>';}).join('')+'</div></div>';}).join('');
+  ov.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);width:500px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0"><div><div style="font-size:14px;font-weight:700;color:var(--text)">📂 Chọn Tài liệu Nguồn</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Chọn tài liệu để AI tham khảo</div></div><button onclick="document.getElementById(\'srcPickerModal\').remove()" style="background:var(--bg2);border:none;color:var(--text3);width:28px;height:28px;border-radius:var(--radius-xs);font-size:14px;cursor:pointer">&#10005;</button></div><div style="flex:1;overflow-y:auto;padding:14px 16px">'+fhtml+'</div><div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px"><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-ghost" style="font-size:11px" onclick="showUploadSource()">Upload mới</button><span id="pickerCount" style="font-size:11px;color:var(--text4)">0 đã chọn</span></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="document.getElementById(\'srcPickerModal\').remove()">Hủy</button><button class="btn btn-primary" onclick="confirmSrcPicker()">✓ Xác nhận</button></div></div></div>';
+  document.body.appendChild(ov); ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  if(!allSourceDocs.length){fetch(API+'/sources').then(r=>r.json()).then(docs=>{allSourceDocs=docs;document.getElementById('srcPickerModal')?.remove();openSrcPickerModal();});}
   updatePickerCount();
 }
 
-function onPickerCheck(cb, lblId) {
-  document.getElementById(lblId)?.classList.toggle('selected', cb.checked);
-  if (cb.checked) cb.closest('label').style.cssText += 'border-color:var(--accent);background:rgba(0,119,182,.07)';
-  else { const lbl = document.getElementById(lblId); if(lbl) lbl.style.borderColor=''; lbl.style.background=''; }
-  updatePickerCount();
+function onPickerCheck(cb,lblId){const lbl=document.getElementById(lblId);if(lbl){lbl.classList.toggle('selected',cb.checked);lbl.style.borderColor=cb.checked?'var(--primary)':'';lbl.style.background=cb.checked?'var(--primary-light)':'';}updatePickerCount();}
+function updatePickerCount(){const n=document.querySelectorAll('#srcPickerModal input[type=checkbox]:checked').length;const el=document.getElementById('pickerCount');if(el)el.textContent=n+' đã chọn';}
+
+function confirmSrcPicker(){
+  const checked=[...document.querySelectorAll('#srcPickerModal input[type=checkbox]:checked')];
+  uploadedSrcIds=checked.map(cb=>cb.value); uploadedDocs=uploadedSrcIds.map(id=>allSourceDocs.find(d=>d.id===id)).filter(Boolean);
+  const preview=document.getElementById('selectedSrcPreview'),list=document.getElementById('selectedSrcList'),badge=document.getElementById('selectedSrcCount'),btnPick=document.getElementById('btnPickSrc');
+  if(uploadedDocs.length){
+    list.innerHTML=uploadedDocs.map(d=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-radius:var(--radius-xs);font-size:11px"><span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+d.filename+'</span><span style="color:var(--text4);font-family:DM Mono,monospace;flex-shrink:0">'+((d.file_size||0)/1024).toFixed(1)+' KB</span></div>').join('');
+    if(preview)preview.style.display='block'; if(badge){badge.textContent=uploadedDocs.length;badge.style.display='inline';}
+    if(btnPick)btnPick.innerHTML='Thay đổi tài liệu <span style="background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:var(--radius-full);margin-left:4px">'+uploadedDocs.length+'</span>';
+  } else { if(preview)preview.style.display='none'; if(badge)badge.style.display='none'; if(btnPick)btnPick.innerHTML='Chọn tài liệu nguồn'; }
+  document.getElementById('srcPickerModal').remove(); if(uploadedDocs.length) toast('Đã chọn '+uploadedDocs.length+' tài liệu','success');
 }
 
-function updatePickerCount() {
-  const n = document.querySelectorAll('#srcPickerModal input[type=checkbox]:checked').length;
-  const el = document.getElementById('pickerCount');
-  if (el) el.textContent = n + ' đã chọn';
+async function init(){await checkHealth();await loadTemplates();await loadRuns();await loadSourceDocs();}
+async function checkHealth(){try{const r=await fetch(API+'/health');document.getElementById('serverDot').style.background=r.ok?'var(--green)':'var(--red)';}catch{document.getElementById('serverDot').style.background='var(--red)';}}
+async function loadTemplates(){try{const r=await fetch(API+'/templates');templates=await r.json();renderTmplList();}catch(e){toast('Không thể tải templates','error');}}
+async function loadRuns(){try{const r=await fetch(API+'/pipeline');renderRunList(await r.json());}catch{}}
+
+function renderTmplList(){
+  const el=document.getElementById('tmplList');
+  if(!templates.length){el.innerHTML='<div style="color:var(--text4);font-size:11px;padding:12px 0">Chưa có template.</div><button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center" onclick="showUploadTemplate()">+ Upload Template</button>';return;}
+  el.innerHTML=templates.map((t,i)=>'<div class="tmpl-card '+(selTmplId===t.id?'active':'')+'" onclick="selectTemplate(\''+t.id+'\')"><div class="tmpl-actions"><button class="tmpl-action-btn" title="Xem trước" onclick="event.stopPropagation();openTmplPreview(\''+t.id+'\',\''+t.name.replace(/'/g,"\\'")+'\')">&#128065;</button><button class="tmpl-action-btn tmpl-action-del" onclick="event.stopPropagation();deleteTemplate(\''+t.id+'\',\''+t.name+'\')">&#128465;</button></div><div class="tn">TEMPLATE '+(i+1)+'</div><div class="tm">'+t.name+'</div><div class="td">'+(t.description||'')+'</div><div class="tf">'+t.fields.length+' trường</div></div>').join('')+'<button class="btn btn-ghost" style="width:100%;margin-top:8px;justify-content:center;font-size:11px" onclick="showUploadTemplate()">+ Upload Template</button>';
 }
 
-function confirmSrcPicker() {
-  const checked = [...document.querySelectorAll('#srcPickerModal input[type=checkbox]:checked')];
-  const ids  = checked.map(cb => cb.value);
-  const docs = ids.map(id => allSourceDocs.find(d => d.id === id)).filter(Boolean);
-
-  uploadedSrcIds = ids;
-  uploadedDocs   = docs;
-
-  // Cập nhật preview trong step 2
-  const preview = document.getElementById('selectedSrcPreview');
-  const list    = document.getElementById('selectedSrcList');
-  const badge   = document.getElementById('selectedSrcCount');
-  const btnPick = document.getElementById('btnPickSrc');
-
-  if (docs.length) {
-    list.innerHTML = docs.map(d => `
-      <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;
-        background:var(--bg2);border-radius:4px;font-size:11px">
-        <span>${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'}</span>
-        <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.filename}</span>
-        <span style="color:var(--text3);font-family:monospace;flex-shrink:0">${((d.file_size||0)/1024).toFixed(1)} KB</span>
-      </div>`).join('');
-    if (preview) preview.style.display = 'block';
-    if (badge) { badge.textContent = docs.length; badge.style.display = 'inline'; }
-    if (btnPick) btnPick.innerHTML = `📂 Thay đổi tài liệu <span style="background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px">${docs.length}</span>`;
-  } else {
-    if (preview) preview.style.display = 'none';
-    if (badge) badge.style.display = 'none';
-    if (btnPick) btnPick.innerHTML = '📂 Chọn tài liệu nguồn';
-  }
-
-  document.getElementById('srcPickerModal').remove();
-  if (docs.length) toast(`✅ Đã chọn ${docs.length} tài liệu`, 'success');
+function renderRunList(runs){
+  const el=document.getElementById('runList');
+  if(!runs.length){el.innerHTML='<div style="color:var(--text4);font-size:11px;padding:8px 0">Chưa có run nào</div>';return;}
+  el.innerHTML=runs.slice(0,10).map(r=>{const cls=r.status==='done'?'rs-done':r.status==='reviewing'?'rs-reviewing':r.status==='error'?'rs-error':'rs-other';
+    return '<div class="run-item" onclick="loadRun(\''+r.id+'\')"><div style="flex:1"><div class="run-id">'+r.id.substring(0,8)+'&hellip;</div><div style="font-size:10px;color:var(--text4);margin-top:2px">'+r.updated_at.substring(0,16)+'</div></div><span class="run-status '+cls+'">'+r.status+'</span><button onclick="event.stopPropagation();deleteRun(\''+r.id+'\')" style="margin-left:6px;background:none;border:none;color:var(--text4);cursor:pointer;font-size:11px;opacity:.4;transition:all .15s" onmouseover="this.style.opacity=1;this.style.color=\'var(--red)\'" onmouseout="this.style.opacity=.4;this.style.color=\'var(--text4)\'">&#10005;</button></div>';}).join('');
 }
 
-async function loadSrcDbList() {
-  const el = document.getElementById('srcDbList');
-  if (!el) return;
-  try {
-    const r = await fetch(`${API}/sources`);
-    if (!r.ok) { el.innerHTML = '<div style="color:var(--text3);font-size:11px">Không tải được danh sách.</div>'; return; }
-    const docs = await r.json();
-    allSourceDocs = docs;
-    if (!docs.length) {
-      el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">DB chưa có tài liệu. Upload mới bên dưới.</div>';
-      return;
-    }
-
-    // Nhóm theo folder (giống tab Tài liệu)
-    const groups = {};
-    docs.forEach(d => {
-      const f = d.folder || 'Chưa phân loại';
-      if (!groups[f]) groups[f] = [];
-      groups[f].push(d);
-    });
-
-    el.innerHTML = Object.entries(groups).map(([folder, items], idx) => {
-      const fid = 'step2-folder-' + idx;
-      return `
-      <div class="src-folder-group">
-        <div class="src-folder-header" onclick="toggleFolder('${fid}')"
-          style="padding:6px 10px">
-          <span class="src-folder-icon">📁</span>
-          <span class="src-folder-name">${folder}</span>
-          <span class="src-folder-count">${items.length}</span>
-          <span style="font-size:9px;color:var(--text3);margin-left:4px" id="chev-${fid}">▾</span>
-        </div>
-        <div class="src-folder-body" id="${fid}" style="padding-left:8px">
-          ${items.map(d => `
-            <label class="src-check-item" id="lbl-${d.id}" style="margin-bottom:3px">
-              <input type="checkbox" value="${d.id}" onchange="onSrcCheck(this,'lbl-${d.id}')">
-              <div style="min-width:0">
-                <div class="src-check-name">${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.xlsx?$/i)?'📊':'📝'} ${d.filename}</div>
-                <div class="src-check-meta">${(d.file_size/1024).toFixed(1)} KB · ${(d.text_len||0).toLocaleString()} ký tự</div>
-              </div>
-            </label>`).join('')}
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) { el.innerHTML = `<div style="color:var(--text3);font-size:11px">Lỗi: ${e.message}</div>`; }
+function openTmplPreview(tmplId,tmplName){
+  const ov=document.createElement('div');ov.id='tmplPreviewModal';
+  ov.style.cssText='position:fixed;inset:0;z-index:2000;background:#1e1e1e;display:flex;flex-direction:column';
+  ov.innerHTML='<div style="height:48px;background:#151515;border-bottom:1px solid #333;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:#eee;flex:1">'+tmplName+'</div><a href="'+API+'/templates/'+tmplId+'/download" style="background:var(--primary);border:none;color:#fff;padding:7px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;font-family:Lexend,sans-serif">Tải xuống</a><button onclick="document.getElementById(\'tmplPreviewModal\').remove()" style="background:none;border:1px solid #444;color:#999;width:28px;height:28px;border-radius:5px;font-size:14px;cursor:pointer">&#10005;</button></div><div style="flex:1;overflow-y:auto;background:#3a3a3a;padding:28px 0"><div style="max-width:794px;margin:0 auto;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);min-height:600px"><iframe src="'+API+'/templates/'+tmplId+'/preview-html" style="width:100%;min-height:900px;border:none;display:block" onload="try{this.style.minHeight=this.contentDocument.body.scrollHeight+\'px\'}catch{}"></iframe></div></div>';
+  document.body.appendChild(ov);document.addEventListener('keydown',function esc(e){if(e.key==='Escape'){ov.remove();document.removeEventListener('keydown',esc);}});
 }
 
-function onSrcCheck(cb, lblId) { document.getElementById(lblId)?.classList.toggle('selected', cb.checked); }
-function getCheckedSrcIds() { return [...document.querySelectorAll('#srcDbList input[type=checkbox]:checked')].map(cb => cb.value); }
-function toggleUploadNew() {
-  const panel = document.getElementById('uploadNewPanel');
-  const btn   = document.getElementById('btnToggleNew');
-  const show  = panel.style.display === 'none';
-  panel.style.display = show ? 'block' : 'none';
-  btn.textContent = show ? '− Ẩn upload' : '+ Upload mới';
-}
+function selectTemplate(id){selTmplId=id;currentRun=null;uploadedSrcIds=[];uploadedDocs=[];pendingFiles=[];clearPoll();renderTmplList();renderPipelineUI();}
 
-async function init() {
-  await checkHealth();
-  await loadTemplates();
-  await loadRuns();
-  await loadSourceDocs();
-}
-
-async function checkHealth() {
-  try {
-    const r = await fetch(`${API}/health`);
-    document.getElementById('serverDot').style.background = r.ok ? 'var(--green)' : 'var(--red)';
-  } catch { document.getElementById('serverDot').style.background = 'var(--red)'; }
-}
-
-async function loadTemplates() {
-  try {
-    const r = await fetch(`${API}/templates`);
-    templates = await r.json();
-    renderTmplList();
-  } catch(e) { toast('Không thể tải templates: ' + e.message, 'error'); }
-}
-
-async function loadRuns() {
-  try {
-    const r = await fetch(`${API}/pipeline`);
-    const runs = await r.json();
-    renderRunList(runs);
-  } catch {}
-}
-
-// ═══════════════════════════════════════════════════════════
-// TEMPLATES
-// ═══════════════════════════════════════════════════════════
-function renderTmplList() {
-  const el = document.getElementById('tmplList');
-  if (!templates.length) {
-    el.innerHTML = `<div style="color:var(--text3);font-size:11px;padding:8px">Chưa có template. Upload template .docx đầu tiên.</div>
-    <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center" onclick="showUploadTemplate()">+ Upload Template</button>`;
-    return;
-  }
-  el.innerHTML = templates.map((t,i) => `
-    <div class="tmpl-card ${selTmplId===t.id?'active':''}" onclick="selectTemplate('${t.id}')">
-      <div class="tmpl-actions">
-        <button class="tmpl-action-btn" title="Xem trước"
-          onclick="event.stopPropagation();openTmplPreview('${t.id}','${t.name.replace(/'/g,"\\'")}')">👁</button>
-        <button class="tmpl-action-btn tmpl-action-del"
-          onclick="event.stopPropagation();deleteTemplate('${t.id}','${t.name}')">🗑</button>
-      </div>
-      <div class="tn">DOC ${i+1}</div>
-      <div class="tm">${t.name}</div>
-      <div class="td">${t.description||''}</div>
-      <div class="tf">🟡 ${t.fields.length} trường</div>
-    </div>`).join('')
-    + `<button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;font-size:11px" onclick="showUploadTemplate()">+ Upload Template</button>`;
-}
-
-function renderRunList(runs) {
-  const el = document.getElementById('runList');
-  if (!runs.length) { el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:4px">Chưa có run nào</div>'; return; }
-  el.innerHTML = runs.slice(0,8).map(r => {
-    const cls = r.status==='done'?'rs-done':r.status==='reviewing'?'rs-reviewing':r.status==='error'?'rs-error':'rs-other';
-    return `<div class="run-item" style="position:relative" onclick="loadRun('${r.id}')">
-      <div style="flex:1"><div class="run-id">${r.id.substring(0,8)}…</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${r.updated_at.substring(0,16)}</div></div>
-      <span class="run-status ${cls}">${r.status}</span>
-      <button onclick="event.stopPropagation();deleteRun('${r.id}')" style="margin-left:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:2px 5px;border-radius:3px;opacity:0.5;transition:all .15s" onmouseover="this.style.opacity='1';this.style.color='var(--red)'" onmouseout="this.style.opacity='0.5';this.style.color='var(--text3)'">✕</button>
-    </div>`;
-  }).join('');
-}
-
-function openTmplPreview(tmplId, tmplName) {
-  const overlay = document.createElement('div');
-  overlay.id = 'tmplPreviewModal';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:#2d2d2d;display:flex;flex-direction:column';
-  overlay.innerHTML = `
-    <!-- Toolbar -->
-    <div style="height:48px;background:#1e1e1e;border-bottom:1px solid #3a3a3a;
-      display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0">
-      <div style="width:26px;height:26px;background:#1565c0;border-radius:4px;
-        display:flex;align-items:center;justify-content:center;font-size:13px">📄</div>
-      <div>
-        <div style="font-size:12px;font-weight:600;color:#e8e8e8">${tmplName}</div>
-        <div style="font-size:10px;color:#888">Xem trước template</div>
-      </div>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <a href="${API}/templates/${tmplId}/download"
-          style="display:flex;align-items:center;gap:5px;background:#1565c0;border:none;
-          color:#fff;padding:6px 12px;border-radius:5px;font-size:11px;font-weight:600;
-          cursor:pointer;text-decoration:none">⬇ Tải xuống</a>
-        <button onclick="document.getElementById('tmplPreviewModal').remove()"
-          style="background:none;border:1px solid #444;color:#aaa;width:28px;height:28px;
-          border-radius:5px;font-size:14px;cursor:pointer">✕</button>
-      </div>
-    </div>
-    <!-- Document area -->
-    <div style="flex:1;overflow-y:auto;background:#525659;padding:28px 0">
-      <div style="max-width:794px;margin:0 auto;background:#fff;
-        box-shadow:0 8px 32px rgba(0,0,0,.4);min-height:600px">
-        <iframe src="${API}/templates/${tmplId}/preview-html"
-          style="width:100%;min-height:900px;border:none;display:block"
-          onload="try{this.style.minHeight=this.contentDocument.body.scrollHeight+'px'}catch{}">
-        </iframe>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('keydown', e => { if(e.key==='Escape') overlay.remove(); });
-  document.addEventListener('keydown', function esc(e) {
-    if(e.key==='Escape'){ overlay.remove(); document.removeEventListener('keydown',esc); }
-  });
-}
-
-function selectTemplate(id) {
-  selTmplId = id;
-  currentRun = null;
-  uploadedSrcIds = [];
-  uploadedDocs = [];
-  pendingFiles = [];
-  clearPoll();
-  renderTmplList();
-  renderPipelineUI();
-}
-
-function renderPipelineUI() {
-  const t = templates.find(x => x.id === selTmplId);
-  document.getElementById('mainContent').innerHTML = `
+function renderPipelineUI(){
+  const t=templates.find(x=>x.id===selTmplId);
+  document.getElementById('mainContent').innerHTML=`
     <div class="pipeline">
-      <div class="step done" id="s1">
-        <div class="step-hdr">
-          <div class="step-num">1</div>
-          <div class="step-info"><div class="step-name">🔍 Template đã phân tích</div><div class="step-desc">${t.name} · ${t.fields.length} trường tô vàng</div></div>
-          <span class="sbadge sb-done">✓ Done</span>
-        </div>
-        <div class="step-body">
-          <button class="btn btn-ghost" onclick="showFieldsPopup()" style="font-size:11px">
-            🔍 Hiển thị ${t.fields.length} trường cần điền
-          </button>
-        </div>
-      </div>
+      <div class="step done" id="s1"><div class="step-hdr"><div class="step-num">1</div><div class="step-info"><div class="step-name">Template đã phân tích</div><div class="step-desc">${t.name} &middot; ${t.fields.length} trường</div></div><span class="sbadge sb-done">✓ Xong</span></div>
+        <div class="step-body"><button class="btn btn-ghost" onclick="showFieldsPopup()" style="font-size:11px">Xem ${t.fields.length} trường cần điền</button></div></div>
 
-      <div class="step active" id="s2">
-        <div class="step-hdr">
-          <div class="step-num">2</div>
-          <div class="step-info"><div class="step-name">📂 Upload Tài liệu Nguồn</div><div class="step-desc">Upload báo cáo cũ, file số liệu (Word/PDF) làm dữ liệu đầu vào</div></div>
-          <span class="sbadge sb-run" id="b2">Chờ upload</span>
-        </div>
+      <div class="step active" id="s2"><div class="step-hdr"><div class="step-num">2</div><div class="step-info"><div class="step-name">Tài liệu nguồn</div><div class="step-desc">Chọn tài liệu để AI tham khảo khi điền nội dung</div></div><span class="sbadge sb-run" id="b2">Chờ upload</span></div>
         <div class="step-body">
           <div id="phaseUpload">
-            <!-- Danh sách tài liệu đã chọn -->
-            <div id="selectedSrcPreview" style="display:none;margin-bottom:10px">
-              <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;
-                letter-spacing:.5px;margin-bottom:6px">Tài liệu đã chọn</div>
-              <div id="selectedSrcList" style="display:flex;flex-direction:column;gap:4px"></div>
-            </div>
-
+            <div id="selectedSrcPreview" style="display:none;margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Tài liệu đã chọn</div><div id="selectedSrcList" style="display:flex;flex-direction:column;gap:4px"></div></div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button class="btn btn-ghost" onclick="openSrcPickerModal()" id="btnPickSrc"
-                style="display:flex;align-items:center;gap:7px">
-                📂 Chọn tài liệu nguồn
-                <span id="selectedSrcCount" style="background:var(--accent);color:#fff;
-                  font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;display:none">0</span>
-              </button>
+              <button class="btn btn-ghost" onclick="openSrcPickerModal()" id="btnPickSrc" style="display:flex;align-items:center;gap:7px">📂 Chọn tài liệu nguồn <span id="selectedSrcCount" style="background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:var(--radius-full);display:none">0</span></button>
               <button class="btn btn-primary" onclick="doUploadFiles()" id="btnUpload">▶ Tiếp tục</button>
-              <button class="btn btn-ghost" onclick="skipSources()" style="font-size:11px">Bỏ qua</button>
-            </div>
-            <div id="uploadLog" style="margin-top:8px"></div>
-          </div>
-          <div id="phaseExtract" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2)">
-            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px">
-              <span style="background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">B</span>
-              Trích xuất nội dung văn bản
-            </div>
+              <button class="btn btn-ghost" onclick="skipSources()" style="font-size:11px">Bỏ qua</button></div>
+            <div id="uploadLog" style="margin-top:8px"></div></div>
+          <div id="phaseExtract" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">Trích xuất nội dung văn bản</div>
             <div id="uploadedFileList" style="margin-bottom:10px"></div>
-            <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 14px;font-size:11px;color:var(--text3);margin-bottom:10px">
-              ⏸ Pipeline đang chờ xác nhận — nhấn nút bên dưới để bắt đầu trích xuất văn bản từ các file đã upload.
-            </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="btn btn-ai" onclick="confirmExtract()" id="btnExtract">✨ Xác nhận Trích xuất</button>
-            </div>
-            <div id="srcLog" style="margin-top:8px"></div>
-          </div>
-        </div>
-      </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-size:11px;color:var(--text3);margin-bottom:12px">Pipeline đang chờ xác nhận. Nhấn nút bên dưới để bắt đầu.</div>
+            <button class="btn btn-ai" onclick="confirmExtract()" id="btnExtract">✨ Xác nhận trích xuất</button>
+            <div id="srcLog" style="margin-top:8px"></div></div></div></div>
 
-      <div class="step" id="s3">
-        <div class="step-hdr">
-          <div class="step-num">3</div>
-          <div class="step-info"><div class="step-name">✍️ AI Viết nội dung</div><div class="step-desc">LangGraph pipeline: AI đọc nguồn → điền từng trường → đánh giá confidence</div></div>
-          <span class="sbadge sb-idle" id="b3">Chờ</span>
-        </div>
-        <div class="step-body">
-          <div class="pbar"><div class="pbar-fill" id="s3Pbar" style="width:0%"></div></div>
-          <div class="log" id="s3Log"></div>
-        </div>
-      </div>
+      <div class="step" id="s3"><div class="step-hdr"><div class="step-num">3</div><div class="step-info"><div class="step-name">Multi-Agent AI</div><div class="step-desc">Researcher → Writer → Verifier → Editor</div></div><span class="sbadge sb-idle" id="b3">Chờ</span></div>
+        <div class="step-body"><div class="pbar"><div class="pbar-fill" id="s3Pbar" style="width:0%"></div></div><div class="log" id="s3Log"></div></div></div>
 
-      <div class="step" id="s4">
-        <div class="step-hdr">
-          <div class="step-num">4</div>
-          <div class="step-info"><div class="step-name">👁️ Review & Phê duyệt</div><div class="step-desc">🟢 AI tự tin cao · 🔴 Cần kiểm tra · Chỉnh sửa rồi approve</div></div>
-          <span class="sbadge sb-idle" id="b4">Chờ</span>
-        </div>
-        <div class="step-body" id="s4Body"><div style="color:var(--text3);font-size:12px">Chờ bước 3 hoàn thành.</div></div>
-      </div>
+      <div class="step" id="s4"><div class="step-hdr"><div class="step-num">4</div><div class="step-info"><div class="step-name">Review & Phê duyệt</div><div class="step-desc">Kiểm tra, chỉnh sửa nội dung AI đề xuất</div></div><span class="sbadge sb-idle" id="b4">Chờ</span></div>
+        <div class="step-body" id="s4Body"><div style="color:var(--text4);font-size:12px">Chờ bước 3 hoàn thành.</div></div></div>
 
-      <div class="step" id="s5">
-        <div class="step-hdr">
-          <div class="step-num">5</div>
-          <div class="step-info"><div class="step-name">📥 Xuất File DOCX</div><div class="step-desc">Tải xuống file đã điền hoàn chỉnh từ server</div></div>
-          <span class="sbadge sb-idle" id="b5">Chờ</span>
-        </div>
-        <div class="step-body" id="s5Body"><div style="color:var(--text3);font-size:12px">Chờ review xong.</div></div>
-      </div>
-
+      <div class="step" id="s5"><div class="step-hdr"><div class="step-num">5</div><div class="step-info"><div class="step-name">Xuất File DOCX</div><div class="step-desc">Tải xuống file đã điền hoàn chỉnh</div></div><span class="sbadge sb-idle" id="b5">Chờ</span></div>
+        <div class="step-body" id="s5Body"><div style="color:var(--text4);font-size:12px">Chờ review xong.</div></div></div>
     </div>`;
 }
 
-// ═══════════════════════════════════════════════════════════
-// STEP 2
-// ═══════════════════════════════════════════════════════════
-function onDrop(e) { e.preventDefault(); document.getElementById('uploadZone').classList.remove('drag'); addFiles([...e.dataTransfer.files]); }
-function onFilePick(e) { addFiles([...e.target.files]); e.target.value=''; }
-function addFiles(files) {
-  files.forEach(f => { if (!pendingFiles.find(p=>p.name===f.name)) pendingFiles.push(f); });
-  document.getElementById('fileChips').innerHTML = pendingFiles.map(f =>
-    `<div class="chip">${f.name.endsWith('.pdf')?'📄':f.name.match(/\.xlsx?$/i)?'📊':'📝'} ${f.name}<span class="rm" onclick="rmFile('${f.name}')">×</span></div>`).join('');
-  document.getElementById('btnUpload').disabled = pendingFiles.length === 0;
-}
-function rmFile(name) { pendingFiles = pendingFiles.filter(f=>f.name!==name); addFiles([]); }
-
-async function doUploadFiles() {
-  const btn = document.getElementById('btnUpload');
-  btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang khởi động...';
-  setStep(2,'active','Đang khởi động pipeline...');
-  try {
-    if (!currentRun) {
-      const rs = await fetch(`${API}/pipeline/start`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ template_id: selTmplId, source_doc_ids: [] }) });
-      if (!rs.ok) throw new Error(await rs.text());
-      currentRun = (await rs.json()).run_id;
-    }
-    btn.innerHTML = '<div class="spin"></div> Đang xử lý...';
-    // uploadedSrcIds và uploadedDocs đã được set từ confirmSrcPicker()
-    if (!uploadedSrcIds.length) { skipSources(); btn.disabled=false; btn.innerHTML='▶ Tiếp tục'; return; }
-    btn.innerHTML = '<div class="spin"></div> Đang xử lý...';
-    await fetch(`${API}/pipeline/${currentRun}/attach_sources`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ source_doc_ids: uploadedSrcIds }) });
-    document.getElementById('uploadLog').innerHTML = `<div style="color:var(--green);font-size:11px">✅ Đã chọn ${uploadedDocs.length} tài liệu</div>`;
-    document.getElementById('uploadedFileList').innerHTML = uploadedDocs.map(d =>
-      `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--bg2);border-radius:5px;margin-bottom:4px;font-size:11px">
-        <span>${(d.filename||'').endsWith('.pdf')?'📄':'📝'}</span>
-        <span style="flex:1;color:var(--text2)">${d.filename}</span>
-        <span style="color:var(--text3);font-family:monospace">${((d.file_size||0)/1024).toFixed(1)} KB</span>
-      </div>`).join('');
+async function doUploadFiles(){
+  const btn=document.getElementById('btnUpload'); btn.disabled=true; btn.innerHTML='<div class="spin"></div> Dang khoi dong...';
+  setStep(2,'active','Đang khởi động...');
+  try{
+    if(!currentRun){const rs=await fetch(API+'/pipeline/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({template_id:selTmplId,source_doc_ids:[]})}); if(!rs.ok) throw new Error(await rs.text()); currentRun=(await rs.json()).run_id;}
+    if(!uploadedSrcIds.length){skipSources();btn.disabled=false;btn.innerHTML='Tiep tuc';return;}
+    btn.innerHTML='<div class="spin"></div> Dang xu ly...';
+    await fetch(API+'/pipeline/'+currentRun+'/attach_sources',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_doc_ids:uploadedSrcIds})});
+    document.getElementById('uploadLog').innerHTML='<div style="color:var(--green);font-size:11px">Da chon '+uploadedDocs.length+' tai lieu</div>';
+    document.getElementById('uploadedFileList').innerHTML=uploadedDocs.map(d=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-radius:var(--radius-xs);margin-bottom:3px;font-size:11px"><span style="flex:1;color:var(--text2)">'+d.filename+'</span><span style="color:var(--text4);font-family:DM Mono,monospace">'+((d.file_size||0)/1024).toFixed(1)+' KB</span></div>').join('');
     setStep(2,'active','Đang phân tích...');
-    await pollUntilStatus(['awaiting_extract', 'reviewing', 'error'], () => {
-      document.getElementById('phaseUpload').style.display = 'none';
-      document.getElementById('phaseExtract').style.display = 'block';
-      setStep(2,'active','⏸ Chờ xác nhận trích xuất');
-    });
-    return;
-  } catch(e) {
-    setStep(2,'err','Lỗi');
-    document.getElementById('uploadLog').innerHTML = `<div style="color:var(--red);font-size:11px">✗ ${e.message}</div>`;
-    toast('Upload lỗi: '+e.message,'error');
-  }
-  btn.disabled=false; btn.innerHTML='▶ Tiếp tục';
+    await pollUntilStatus(['awaiting_extract','reviewing','error'],()=>{document.getElementById('phaseUpload').style.display='none';document.getElementById('phaseExtract').style.display='block';setStep(2,'active','Chờ xác nhận');});return;
+  }catch(e){setStep(2,'err','Loi');document.getElementById('uploadLog').innerHTML='<div style="color:var(--red);font-size:11px">'+e.message+'</div>';toast('Lỗi: '+e.message,'error');}
+  btn.disabled=false;btn.innerHTML='Tiep tuc';
 }
 
-async function confirmExtract() {
-  const btn = document.getElementById('btnExtract');
-  btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang trích xuất...';
+async function confirmExtract(){
+  const btn=document.getElementById('btnExtract'); btn.disabled=true; btn.innerHTML='<div class="spin"></div> Dang trich xuat...';
   setStep(2,'active','Đang trích xuất...');
-  try {
-    const r = await fetch(`${API}/pipeline/${currentRun}/confirm_extract`, { method:'POST' });
-    if (!r.ok) throw new Error(await r.text());
-    const log = document.getElementById('srcLog');
-    log.innerHTML = '<div class="log"><div class="info">⏳ AI đang đọc tài liệu và điền nội dung...</div></div>';
-
-    // Hiện step 3 đang chạy với progress bar
-    setStep(3,'active','AI đang viết...');
-    const s3log = document.getElementById('s3Log');
-    if (s3log) addLog(s3log, '🤖 AI đang đọc tài liệu nguồn và điền nội dung...', 'info');
-
-    // Poll với progress bar động
-    const progressTimer = setInterval(async () => {
-      try {
-        const pr = await fetch(`${API}/pipeline/${currentRun}`);
-        const prun = await pr.json();
-        const pct = {extracting:20, writing:60}[prun.status] || 40;
-        const s3pbar = document.getElementById('s3Pbar');
-        if (s3pbar) s3pbar.style.width = pct + '%';
-        const b3 = document.getElementById('b3');
-        if (b3) b3.textContent = prun.status === 'writing' ? 'AI đang viết...' : 'Đang trích xuất...';
-      } catch {}
-    }, 1500);
-
-    await pollUntilStatus(['reviewing', 'error'], async () => {
-      clearInterval(progressTimer);
-      log.innerHTML = '<div class="log">' + uploadedDocs.map(d=>`<div class="ok">✓ ${d.filename} — ${(d.text_len||0).toLocaleString()} ký tự</div>`).join('') + '</div>';
-      setStep(2,'done','✓ Xong');
-      setStep(3,'done','✓ AI xong');
-      const s3pbar = document.getElementById('s3Pbar');
-      if (s3pbar) s3pbar.style.width = '100%';
-      const s3log2 = document.getElementById('s3Log');
-      if (s3log2) addLog(s3log2, '✅ AI đã điền xong tất cả các trường!', 'ok');
-      await loadReview();
-    });
-  } catch(e) {
-    setStep(2,'err','Lỗi');
-    toast('Trích xuất lỗi: '+e.message,'error');
-  }
-  btn.disabled=false; btn.innerHTML='✨ Xác nhận Trích xuất';
+  try{
+    const r=await fetch(API+'/pipeline/'+currentRun+'/confirm_extract',{method:'POST'}); if(!r.ok) throw new Error(await r.text());
+    const log=document.getElementById('srcLog'); log.innerHTML='<div class="log"><div class="info">AI dang doc tai lieu va dien noi dung...</div></div>';
+    setStep(3,'active','Multi-Agent đang chạy...');
+    const s3log=document.getElementById('s3Log'); if(s3log) addLog(s3log,'Researcher + Writer + Verifier + Editor đang xử lý...','info');
+    const pt=setInterval(async()=>{try{const pr=await fetch(API+'/pipeline/'+currentRun);const prun=await pr.json();const pct={extracting:15,writing:45,verifying:70}[prun.status]||50;const pb=document.getElementById('s3Pbar');if(pb)pb.style.width=pct+'%';}catch{}},1500);
+    await pollUntilStatus(['reviewing','error'],async()=>{clearInterval(pt);setStep(2,'done','Done');setStep(3,'done','Done');
+      const pb=document.getElementById('s3Pbar');if(pb)pb.style.width='100%';
+      const s3l=document.getElementById('s3Log');if(s3l)addLog(s3l,'Multi-Agent pipeline hoàn thành!','ok');await loadReview();});
+  }catch(e){setStep(2,'err','Loi');toast('Lỗi: '+e.message,'error');}
+  btn.disabled=false;btn.innerHTML='Xac nhan Trich xuat';
 }
 
-async function pollUntilStatus(targetStatuses, onDone) {
-  return new Promise((resolve) => {
-    const timer = setInterval(async () => {
-      try {
-        const r = await fetch(`${API}/pipeline/${currentRun}`);
-        const run = await r.json();
-        if (targetStatuses.includes(run.status)) {
-          clearInterval(timer);
-          if (run.status === 'error') { toast('Pipeline lỗi: '+(run.error_message||'Unknown'), 'error'); }
-          else { await onDone(run); }
-          resolve();
-        }
-      } catch {}
-    }, 2000);
-  });
-}
+async function pollUntilStatus(targets,onDone){return new Promise(resolve=>{const timer=setInterval(async()=>{try{const r=await fetch(API+'/pipeline/'+currentRun);const run=await r.json();if(targets.includes(run.status)){clearInterval(timer);if(run.status==='error')toast('Pipeline loi: '+(run.error_message||'Unknown'),'error');else await onDone(run);resolve();}}catch{}},2000);});}
+function skipSources(){uploadedSrcIds=[];uploadedDocs=[];setStep(2,'done','Bo qua');confirmExtract();}
+function clearPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 
-function skipSources() {
-  uploadedSrcIds = [];
-  uploadedDocs   = [];
-  setStep(2,'done','Bỏ qua');
-  // Không có tài liệu → chạy thẳng extract (context rỗng)
-  confirmExtract();
-}
-
-// ═══════════════════════════════════════════════════════════
-// STEP 3 — tự động chạy sau confirmExtract, không cần nút
-// ═══════════════════════════════════════════════════════════
-function clearPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer=null; } }
-
-// ═══════════════════════════════════════════════════════════
-// STEP 4
-// ═══════════════════════════════════════════════════════════
-async function loadReview() {
+async function loadReview(){
   setStep(4,'waiting','Chờ duyệt');
-  try {
-  const r = await fetch(`${API}/pipeline/${currentRun}/results`);
-  if (!r.ok) {
-    const err = await r.text();
-    document.getElementById('s4Body').innerHTML =
-      `<div style="color:var(--red);font-size:12px">✗ Lỗi tải kết quả: ${err}</div>`;
-    return;
-  }
-  const results = await r.json();
-  if (!Array.isArray(results) || !results.length) {
-    document.getElementById('s4Body').innerHTML =
-      `<div style="color:var(--text3);font-size:12px">Chưa có kết quả. Thử chạy lại pipeline.</div>`;
-    return;
-  }
-  const high = results.filter(x=>x.confidence==='high').length;
-  const mid  = results.filter(x=>x.confidence==='mid').length;
-  const low  = results.filter(x=>x.confidence==='low').length;
-  document.getElementById('s4Body').innerHTML = `
-    <div class="sum-bar">
-      <div class="sum-stat"><div class="dot" style="background:var(--green)"></div>${high} tự tin cao</div>
-      <div class="sum-stat"><div class="dot" style="background:var(--gold)"></div>${mid} trung bình</div>
-      <div class="sum-stat"><div class="dot" style="background:var(--red)"></div>${low} cần kiểm tra</div>
-    </div>
-    <div class="rev-list">
-      ${results.map((r,i) => {
-        const cls    = r.confidence==='high'?'h':r.confidence==='low'?'l':'m';
-        const lbl    = r.confidence==='high'?'🟢 Cao':r.confidence==='low'?'🔴 Thấp':'🟡 Trung bình';
-        const aiVal  = r.final_value || r.ai_value || '';
-        const origVal= r.placeholder || '';
-        const ctx100 = r.context ? (r.context.substring(0,100)+(r.context.length>100?'…':'')) : '';
+  try{
+    const r=await fetch(API+'/pipeline/'+currentRun+'/results'); if(!r.ok){document.getElementById('s4Body').innerHTML='<div style="color:var(--red);font-size:12px">Lỗi tải kết quả</div>';return;}
+    const results=await r.json(); if(!Array.isArray(results)||!results.length){document.getElementById('s4Body').innerHTML='<div style="color:var(--text4);font-size:12px">Chưa có kết quả.</div>';return;}
+    const high=results.filter(x=>x.confidence==='high').length,mid=results.filter(x=>x.confidence==='mid').length,low=results.filter(x=>x.confidence==='low').length;
+    document.getElementById('s4Body').innerHTML=`
+      <div class="sum-bar"><div class="sum-stat"><div class="dot" style="background:var(--green)"></div>${high} cao</div><div class="sum-stat"><div class="dot" style="background:var(--gold)"></div>${mid} trung binh</div><div class="sum-stat"><div class="dot" style="background:var(--red)"></div>${low} can kiem tra</div></div>
+      <div class="rev-list">${results.map((r,i)=>{
+        const cls=r.confidence==='high'?'h':r.confidence==='low'?'l':'m';
+        const lbl=r.confidence==='high'?'Cao':r.confidence==='low'?'Thap':'TB';
+        const aiVal=r.final_value||r.ai_value||'';
+        const origVal=r.placeholder||'';
+        const ctx100=r.context?(r.context.substring(0,120)+(r.context.length>120?'...':'')):'';
+        const modeBadge=r.field_mode==='insert_below'?'<span style="background:var(--green-soft);color:var(--green);font-size:9px;font-weight:600;padding:2px 8px;border-radius:var(--radius-full);border:1px solid var(--green-border)">🟢 Chèn dưới</span>':'<span style="background:var(--gold-soft);color:var(--gold);font-size:9px;font-weight:600;padding:2px 8px;border-radius:var(--radius-full);border:1px solid var(--gold-border)">🟡 Thay thế</span>';
         return `<div class="rev-item ${cls}">
-          <div class="rev-top">
-            <span class="rev-idx">#${(i+1).toString().padStart(2,'00')}</span>
-            <div class="rev-ctx">${ctx100}</div>
-            <span class="rev-conf">${lbl}</span>
-            ${r.field_mode==='insert_below'
-              ? '<span style="background:rgba(6,214,160,.1);color:var(--green);font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;border:1px solid rgba(6,214,160,.25)">🟢 Chèn bên dưới</span>'
-              : '<span style="background:rgba(244,162,89,.1);color:var(--gold);font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;border:1px solid rgba(244,162,89,.25)">🟡 Thay thế</span>'}
+          <div class="rev-top"><span class="rev-idx">#${(i+1).toString().padStart(2,'0')}</span><div class="rev-ctx">${ctx100}</div><span class="rev-conf">${lbl}</span>${modeBadge}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px">
+            <div><div style="font-size:10px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">📄 Bản gốc</div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--text3);line-height:1.7;min-height:40px;white-space:pre-wrap;word-break:break-word">${origVal||'<span style="color:var(--text4)">&mdash;</span>'}</div></div>
+            <div><div style="font-size:10px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">🤖 AI đề xuất</div>
+              <textarea class="rev-ta" id="rv-${r.field_key}" oninput="autoResizeTa(this)">${aiVal}</textarea></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
-            <div>
-              <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;
-                letter-spacing:.5px;margin-bottom:4px">📄 Bản gốc (template)</div>
-              <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
-                padding:7px 9px;font-size:12px;color:var(--text3);line-height:1.6;
-                min-height:36px;white-space:pre-wrap;word-break:break-word;font-style:italic">
-                ${origVal||'<em style="color:#9ca3af">—</em>'}
-              </div>
-            </div>
-            <div>
-              <div style="font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase;
-                letter-spacing:.5px;margin-bottom:4px">🤖 AI đề xuất (có thể sửa)</div>
-              <textarea class="rev-ta" id="rv-${r.field_key}" oninput="autoResizeTa(this)">${aiVal}</textarea>
-            </div>
-          </div>
-          ${r.reason?`<div class="rev-reason">💬 ${r.reason}</div>`:''}
-        </div>`;
-      }).join('')}
-    </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <input type="hidden" id="exportMode" value="clean">
-      <button class="btn btn-green" id="btnSubmitReview" onclick="submitReview()">✅ Phê duyệt & Tiếp tục</button>
-    </div>`;
-  setTimeout(() => { document.querySelectorAll('.rev-ta').forEach(ta => autoResizeTa(ta)); }, 50);
-  } catch(e) {
-    document.getElementById('s4Body').innerHTML =
-      `<div style="color:var(--red);font-size:12px">✗ Lỗi: ${e.message}<br>
-       <small style="color:var(--text3)">Có thể cần chạy migration DB: <code>fill_mode</code> column</small></div>`;
-    console.error('loadReview error:', e);
-  }
+          ${r.reason?'<div class="rev-reason">'+r.reason+'</div>':''}
+        </div>`}).join('')}</div>
+      <div style="display:flex;gap:8px;margin-top:16px"><input type="hidden" id="exportMode" value="clean"><button class="btn btn-green" id="btnSubmitReview" onclick="submitReview()">Phe duyet & Tiep tuc</button></div>`;
+    setTimeout(()=>{document.querySelectorAll('.rev-ta').forEach(ta=>autoResizeTa(ta));},50);
+  }catch(e){document.getElementById('s4Body').innerHTML='<div style="color:var(--red);font-size:12px">Loi: '+e.message+'</div>';}
 }
 
-async function submitReview() {
-  const btn = document.getElementById('btnSubmitReview');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spin"></div> Đang xử lý...'; }
-
-  const results = await (await fetch(`${API}/pipeline/${currentRun}/results`)).json();
-  const edits = {};
-  const fill_mode_overrides = {};
-
-  results.forEach(r => {
-    // Lấy value từ textarea (mid/low) hoặc hidden input (high)
-    const ta  = document.getElementById(`rv-${r.field_key}`);
-    if (ta) edits[r.field_key] = ta.value;
-
-    // Thu thập block_action cho block fields
-    const baEl = document.getElementById(`block-action-${r.field_key}`);
-    if (baEl) fill_mode_overrides[r.field_key] = baEl.value;
-  });
-
-  console.log('Submitting edits:', edits);
-  console.log('fill_mode_overrides:', fill_mode_overrides);
-
-  const mode = document.getElementById('exportMode').value;
-  const resp = await fetch(`${API}/pipeline/${currentRun}/approve`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ edits, export_mode: mode, fill_mode_overrides })
-  });
-
-  if (!resp.ok) {
-    toast('Approve lỗi: ' + await resp.text(), 'error');
-    if (btn) { btn.disabled=false; btn.innerHTML='✅ Phê duyệt & Tiếp tục'; }
-    return;
-  }
-
-  // Lock UI
-  document.querySelectorAll('.rev-ta').forEach(ta => { ta.disabled=true; ta.classList.add('locked'); });
-  document.querySelectorAll('.block-toggle-btn').forEach(b => { b.disabled=true; b.style.opacity='.6'; });
-  if (btn) { btn.disabled=true; btn.innerHTML='✅ Đã phê duyệt'; btn.style.opacity='.6'; }
-  if (document.getElementById('exportMode')) document.getElementById('exportMode').disabled=true;
-
-  setStep(4,'done','✓ Đã duyệt');
-  renderExport(mode);
+async function submitReview(){
+  const btn=document.getElementById('btnSubmitReview'); if(btn){btn.disabled=true;btn.innerHTML='<div class="spin"></div> Dang xu ly...';}
+  const results=await(await fetch(API+'/pipeline/'+currentRun+'/results')).json();
+  const edits={};results.forEach(r=>{const ta=document.getElementById('rv-'+r.field_key);if(ta)edits[r.field_key]=ta.value;});
+  const mode=document.getElementById('exportMode').value;
+  const resp=await fetch(API+'/pipeline/'+currentRun+'/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({edits,export_mode:mode})});
+  if(!resp.ok){toast('Approve lỗi','error');if(btn){btn.disabled=false;btn.innerHTML='Phe duyet & Tiep tuc';}return;}
+  document.querySelectorAll('.rev-ta').forEach(ta=>{ta.disabled=true;ta.classList.add('locked');});
+  if(btn){btn.disabled=true;btn.innerHTML='✅ Đã phê duyệt';btn.style.opacity='.5';}
+  setStep(4,'done','Đã duyệt');renderExport(mode);
 }
 
-// ═══════════════════════════════════════════════════════════
-// STEP 5
-// ═══════════════════════════════════════════════════════════
-function renderExport(mode) {
+function renderExport(mode){
   setStep(5,'active','Sẵn sàng');
-  document.getElementById('s5Body').innerHTML = `
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Chọn định dạng file muốn tải xuống:</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:stretch">
-
-      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);
-        padding:12px 16px;flex:1;min-width:180px">
-        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">📄 Không highlight</div>
-        <div style="font-size:10px;color:var(--text3);margin-bottom:10px;line-height:1.5">
-          File sạch, sẵn sàng gửi/in
-        </div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center"
-          onclick="downloadExport('clean')" id="btnDlClean">
-          📥 Tải xuống
-        </button>
-      </div>
-
-      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);
-        padding:12px 16px;flex:1;min-width:180px">
-        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">🟡 Có highlight vàng</div>
-        <div style="font-size:10px;color:var(--text3);margin-bottom:10px;line-height:1.5">
-          Đánh dấu nội dung AI đã điền, dễ review
-        </div>
-        <button class="btn btn-ghost" style="width:100%;justify-content:center"
-          onclick="downloadExport('tracked')" id="btnDlTracked">
-          📥 Tải xuống
-        </button>
-      </div>
-
-      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);
-        padding:12px 16px;flex:1;min-width:180px">
-        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">👁️ Xem trước</div>
-        <div style="font-size:10px;color:var(--text3);margin-bottom:10px;line-height:1.5">
-          Preview báo cáo trước khi tải
-        </div>
-        <button class="btn btn-ghost" style="width:100%;justify-content:center"
-          onclick="openPreview()">
-          👁️ Xem trước
-        </button>
-      </div>
-
-    </div>
-    <div id="dlResult" style="margin-top:8px"></div>`;
+  document.getElementById('s5Body').innerHTML=`
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Chọn định dạng file:</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">📄 Không highlight</div>
+        <div style="font-size:10px;color:var(--text4);margin-bottom:12px;line-height:1.5">File sạch, sẵn sàng gửi/in</div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="downloadExport('clean')" id="btnDlClean">⬇ Tải xuống</button></div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">🟡 Có highlight</div>
+        <div style="font-size:10px;color:var(--text4);margin-bottom:12px;line-height:1.5">Đánh dấu nội dung AI điền</div>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="downloadExport('tracked')" id="btnDlTracked">⬇ Tải xuống</button></div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">👁 Xem trước</div>
+        <div style="font-size:10px;color:var(--text4);margin-bottom:12px;line-height:1.5">Preview trước khi tải</div>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="openPreview()">👁 Xem trước</button></div>
+    </div><div id="dlResult" style="margin-top:10px"></div>`;
 }
 
-async function downloadExport(mode) {
-  const btnId = mode === 'clean' ? 'btnDlClean' : 'btnDlTracked';
-  const btn   = document.getElementById(btnId);
-  if (btn) { btn.disabled=true; btn.innerHTML='<div class="spin"></div> Đang tạo...'; }
-  try {
-    const r = await fetch(`${API}/pipeline/${currentRun}/export?export_mode=${mode}`, { method:'POST' });
-    if (!r.ok) throw new Error(await r.text());
-    const blob = await r.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    const cd   = r.headers.get('Content-Disposition')||'';
-    const nameRfc    = cd.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-    const nameSimple = cd.match(/filename="([^"]+)"/i)?.[1];
-    const name = nameRfc ? decodeURIComponent(nameRfc) : (nameSimple || 'report.docx');
-    a.href=url; a.download=name; a.click();
-    URL.revokeObjectURL(url);
-    setStep(5,'done','✓ Done');
-    document.getElementById('dlResult').innerHTML =
-      `<div style="color:var(--green);font-size:12px">✅ Đã tải: <strong>${name}</strong></div>`;
-    toast('✅ File đã tải xuống thành công!','success');
-    await loadRuns();
-  } catch(e) {
-    document.getElementById('dlResult').innerHTML =
-      `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
-    toast('Lỗi tải file: '+e.message,'error');
-  }
-  if (btn) { btn.disabled=false; btn.innerHTML='📥 Tải xuống'; }
+async function downloadExport(mode){
+  const btnId=mode==='clean'?'btnDlClean':'btnDlTracked',btn=document.getElementById(btnId);
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spin"></div>';}
+  try{const r=await fetch(API+'/pipeline/'+currentRun+'/export?export_mode='+mode,{method:'POST'});if(!r.ok)throw new Error(await r.text());
+    const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+    const cd=r.headers.get('Content-Disposition')||'',nameRfc=(cd.match(/filename\*=UTF-8''([^;]+)/i)||[])[1],nameSimple=(cd.match(/filename="([^"]+)"/i)||[])[1];
+    const name=nameRfc?decodeURIComponent(nameRfc):(nameSimple||'report.docx');
+    a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);setStep(5,'done','Done');
+    document.getElementById('dlResult').innerHTML='<div style="color:var(--green);font-size:12px">Da tai: <strong>'+name+'</strong></div>';toast('✅ Tải xuống thành công!','success');await loadRuns();
+  }catch(e){document.getElementById('dlResult').innerHTML='<div style="color:var(--red);font-size:12px">'+e.message+'</div>';toast('Lỗi: '+e.message,'error');}
+  if(btn){btn.disabled=false;btn.innerHTML='Tai xuong';}
 }
 
-// ═══════════════════════════════════════════════════════════
-// LOAD EXISTING RUN
-// ═══════════════════════════════════════════════════════════
-async function loadRun(runId) {
-  currentRun = runId;
-  const r = await fetch(`${API}/pipeline/${runId}`);
-  const run = await r.json();
-  const t = templates.find(x => x.id === run.template_id);
-  if (t) { selTmplId = t.id; renderTmplList(); renderPipelineUI(); }
-  if (['reviewing','approved','exporting'].includes(run.status)) {
-    setStep(1,'done','✓'); setStep(2,'done','✓'); setStep(3,'done','✓');
-    await loadReview();
-  } else if (run.status === 'done') {
-    setStep(1,'done','✓'); setStep(2,'done','✓'); setStep(3,'done','✓'); setStep(4,'done','✓');
-    renderExport('clean'); setStep(5,'done','✓');
-  }
-  toast(`Run ${runId.substring(0,8)}… đã tải`, 'info');
+async function loadRun(runId){
+  currentRun=runId;const r=await fetch(API+'/pipeline/'+runId);const run=await r.json();
+  const t=templates.find(x=>x.id===run.template_id);if(t){selTmplId=t.id;renderTmplList();renderPipelineUI();}
+  if(['reviewing','approved','exporting'].includes(run.status)){setStep(1,'done','Done');setStep(2,'done','Done');setStep(3,'done','Done');await loadReview();}
+  else if(run.status==='done'){setStep(1,'done','Done');setStep(2,'done','Done');setStep(3,'done','Done');setStep(4,'done','Done');renderExport('clean');setStep(5,'done','Done');}
+  toast('Run '+runId.substring(0,8)+'… đã tải','info');
 }
 
-async function deleteRun(id) {
-  try {
-    const res = await fetch(`/api/pipeline/${id}`, { method:'DELETE' });
-    if (!res.ok) throw new Error(await res.text());
-    toast('Đã xóa run', 'success'); await loadRuns();
-  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
+async function deleteRun(id){try{const res=await fetch('/api/pipeline/'+id,{method:'DELETE'});if(!res.ok)throw new Error(await res.text());toast('Đã xóa','success');await loadRuns();}catch(e){toast('Lỗi: '+e.message,'error');}}
+async function clearAllTemplates(){if(!confirm('Xóa toàn bộ templates?\n\nThao tác này không thể hoàn tác.'))return;try{await fetch('/api/templates',{method:'DELETE'});selTmplId=null;currentRun=null;document.getElementById('mainContent').innerHTML='';toast('Đã xóa','success');await loadTemplates();}catch(e){toast('Lỗi: '+e.message,'error');}}
+async function clearAllSources(){if(!confirm('Xóa toàn bộ tài liệu nguồn?\n\nThao tác này không thể hoàn tác.'))return;try{await fetch('/api/sources',{method:'DELETE'});allSourceDocs=[];toast('Đã xóa','success');await loadSourceDocs();}catch(e){toast('Lỗi: '+e.message,'error');}}
+async function clearAllRuns(){if(!confirm('Xóa toàn bộ lịch sử runs?\n\nThao tác này không thể hoàn tác.'))return;try{await fetch('/api/pipeline',{method:'DELETE'});toast('Đã xóa','success');await loadRuns();}catch(e){toast('Lỗi: '+e.message,'error');}}
+async function deleteTemplate(id,name){if(!confirm('Xóa template "'+name+'"?\nThao tác này không thể hoàn tác.'))return;try{await fetch('/api/templates/'+id,{method:'DELETE'});if(selTmplId===id)selTmplId=null;toast('Đã xóa','success');await loadTemplates();}catch(e){toast('Lỗi: '+e.message,'error');}}
+
+function showUploadTemplate(){
+  document.getElementById('mainContent').innerHTML=`<div style="max-width:480px"><div style="font-size:16px;font-weight:700;margin-bottom:20px">📤 Upload Template .docx</div><div style="display:flex;flex-direction:column;gap:12px"><div><div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">Tên template <span style="color:var(--red)">*</span></div><input id="tmplName" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;padding:10px 12px;outline:none;font-family:inherit" placeholder="VD: Mẫu BC gửi CQUBKTĐU"></div><div><div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">Mô tả (không bắt buộc)</div><input id="tmplDesc" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;padding:10px 12px;outline:none;font-family:inherit" placeholder="VD: Báo cáo kết quả giám sát..."></div><div><div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">File .docx <span style="color:var(--red)">*</span></div><input type="file" id="tmplFile" accept=".docx" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:10px;width:100%;font-family:inherit"></div><div style="display:flex;gap:8px;margin-top:4px"><button class="btn btn-primary" onclick="doUploadTemplate()">📤 Upload</button><button class="btn btn-ghost" onclick="renderTmplList();document.getElementById('mainContent').innerHTML=''">Hủy</button></div><div id="uploadTmplResult"></div></div></div>`;
 }
 
-async function clearAllTemplates() {
-  if (!confirm('Xóa toàn bộ templates?\n\nThao tác này xóa luôn các runs liên quan và không thể hoàn tác.')) return;
-  try {
-    const res = await fetch('/api/templates', { method: 'DELETE' });
-    if (!res.ok) throw new Error(await res.text());
-    selTmplId = null; currentRun = null;
-    document.getElementById('mainContent').innerHTML = '';
-    toast('Đã xóa toàn bộ templates', 'success');
-    await loadTemplates();
-  } catch(e) { toast('Xóa thất bại: ' + e.message, 'error'); }
+async function doUploadTemplate(){
+  const name=document.getElementById('tmplName').value.trim(),desc=document.getElementById('tmplDesc').value.trim(),file=document.getElementById('tmplFile').files[0];
+  if(!name||!file){toast('Vui lòng nhập tên và chọn file .docx','error');return;}
+  const form=new FormData();form.append('file',file);form.append('name',name);form.append('description',desc);
+  document.getElementById('uploadTmplResult').innerHTML='<div style="color:var(--text3);font-size:12px"><div class="spin"></div> Đang upload...</div>';
+  try{const r=await fetch(API+'/templates/upload',{method:'POST',body:form});
+    if(!r.ok){const e=await r.json();throw new Error(e.detail||'Upload failed');}
+    const tmpl=await r.json();document.getElementById('uploadTmplResult').innerHTML='<div style="color:var(--green);font-size:12px">Thành công! '+tmpl.fields.length+' trường.</div>';
+    await loadTemplates();setTimeout(()=>selectTemplate(tmpl.id),800);
+  }catch(e){document.getElementById('uploadTmplResult').innerHTML='<div style="color:var(--red);font-size:12px">'+e.message+'</div>';}
 }
 
-async function clearAllSources() {
-  if (!confirm('Xóa toàn bộ tài liệu nguồn?\n\nThao tác này không thể hoàn tác.')) return;
-  try {
-    const res = await fetch('/api/sources', { method: 'DELETE' });
-    if (!res.ok) throw new Error(await res.text());
-    allSourceDocs = [];
-    toast('Đã xóa toàn bộ tài liệu nguồn', 'success');
-    await loadSourceDocs();
-  } catch(e) { toast('Xóa thất bại: ' + e.message, 'error'); }
+function showFieldsPopup(){
+  const t=templates.find(x=>x.id===selTmplId);if(!t)return;
+  const ov=document.createElement('div');ov.id='fieldsPopup';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  ov.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);width:580px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0"><div><div style="font-size:14px;font-weight:700;color:var(--text)">Danh sách trường</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+t.name+' &middot; '+t.fields.length+' trường</div></div><button onclick="document.getElementById(\'fieldsPopup\').remove()" style="background:var(--bg2);border:none;color:var(--text3);width:28px;height:28px;border-radius:var(--radius-xs);font-size:14px;cursor:pointer">&#10005;</button></div><div style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:6px">'+t.fields.map((f,i)=>'<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:flex-start;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;font-weight:700;color:var(--primary);background:var(--primary-light);padding:2px 8px;border-radius:var(--radius-xs);flex-shrink:0;margin-top:1px">#'+(i+1).toString().padStart(2,'0')+'</span><div style="flex:1;min-width:0"><div style="font-size:11px;color:var(--text2);word-break:break-word;margin-bottom:4px">'+f.placeholder+'</div><div style="display:flex;gap:6px;align-items:center"><span style="font-size:9px;color:var(--text4);font-weight:500">'+(f.field_type||'sentence')+'</span></div></div></div>').join('')+'</div><div style="padding:12px 20px;border-top:1px solid var(--border);text-align:right;flex-shrink:0"><button class="btn btn-ghost" onclick="document.getElementById(\'fieldsPopup\').remove()">Đóng</button></div></div>';
+  document.body.appendChild(ov);ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
 }
 
-async function clearAllRuns() {
-  if (!confirm('Xóa toàn bộ lịch sử runs?\n\nThao tác này không thể hoàn tác.')) return;
-  try {
-    const res = await fetch('/api/pipeline', { method:'DELETE' });
-    if (!res.ok) throw new Error(await res.text());
-    toast('Đã xóa toàn bộ lịch sử', 'success'); await loadRuns();
-  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
+function setStep(n,state,label){
+  const el=document.getElementById('s'+n),b=document.getElementById('b'+n);if(!el)return;
+  el.className='step '+(state==='idle'?'':state==='active'?'active':state==='done'?'done':state==='err'?'err':'waiting');
+  if(b&&label){b.className='sbadge '+({idle:'sb-idle',active:'sb-run',done:'sb-done',err:'sb-err',waiting:'sb-wait'}[state]||'sb-idle');b.textContent=label;}
 }
+function addLog(el,msg,cls=''){if(!el)return;const d=document.createElement('div');if(cls)d.className=cls;d.textContent=msg;el.appendChild(d);el.scrollTop=el.scrollHeight;}
+function autoResizeTa(ta){ta.style.height='auto';ta.style.height=Math.max(40,ta.scrollHeight)+'px';}
+function autoResizeIframe(iframe){try{const h=iframe.contentDocument?.body?.scrollHeight;if(h&&h>400)iframe.style.minHeight=h+'px';}catch{}}
 
-async function deleteTemplate(id, name) {
-  if (!confirm(`Xóa template "${name}"?\n\nThao tác này xóa luôn trong DB và không thể hoàn tác.`)) return;
-  try {
-    const res = await fetch(`/api/templates/${id}`, { method:'DELETE' });
-    if (!res.ok) throw new Error(await res.text());
-    if (selTmplId === id) { selTmplId = null; showEmpty(); }
-    toast('Đã xóa template', 'success'); await loadTemplates();
-  } catch(e) { toast('Xóa thất bại: '+e.message, 'error'); }
+async function openPreview(){
+  const modal=document.getElementById('previewModal');modal.style.display='flex';modal.style.flexDirection='column';document.body.style.overflow='hidden';
+  try{const rs=await fetch(API+'/pipeline/'+currentRun+'/results');const results=await rs.json();const tmpl=templates.find(t=>t.id===selTmplId)||{};
+    const h=results.filter(x=>x.confidence==='high').length,m=results.filter(x=>x.confidence==='mid').length,l=results.filter(x=>x.confidence==='low').length;
+    document.getElementById('previewStats').innerHTML='<span style="background:var(--green-soft);color:var(--green);padding:3px 10px;border-radius:var(--radius-full);font-size:10px;font-weight:600">'+h+' cao</span><span style="background:var(--gold-soft);color:var(--gold);padding:3px 10px;border-radius:var(--radius-full);font-size:10px;font-weight:600">'+m+' TB</span><span style="background:var(--red-soft);color:var(--red);padding:3px 10px;border-radius:var(--radius-full);font-size:10px;font-weight:600">'+l+' thấp</span>';
+    document.getElementById('previewTemplateName').textContent=tmpl.name||'Bao cao';}catch{}
+  document.getElementById('previewContent').innerHTML='<div style="width:794px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);min-height:1123px"><iframe id="previewIframe" src="'+API+'/pipeline/'+currentRun+'/preview-html" style="width:100%;min-height:1123px;border:none;display:block" onload="autoResizeIframe(this)"></iframe></div>';
 }
-
-function showUploadTemplate() {
-  document.getElementById('mainContent').innerHTML = `
-    <div style="max-width:480px">
-      <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">📤 Upload Template .docx</h2>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div><div style="font-size:11px;color:var(--text3);margin-bottom:5px">Tên template *</div>
-          <input id="tmplName" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="VD: Mẫu BC gửi CQUBKTĐU (NQ57)"></div>
-        <div><div style="font-size:11px;color:var(--text3);margin-bottom:5px">Mô tả</div>
-          <input id="tmplDesc" type="text" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="VD: Báo cáo kết quả giám sát..."></div>
-        <div><div style="font-size:11px;color:var(--text3);margin-bottom:5px">File .docx *</div>
-          <input type="file" id="tmplFile" accept=".docx" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:12px;padding:8px;width:100%"></div>
-        <div style="display:flex;gap:8px;margin-top:4px">
-          <button class="btn btn-primary" onclick="doUploadTemplate()">📤 Upload</button>
-          <button class="btn btn-ghost" onclick="renderTmplList();document.getElementById('mainContent').innerHTML=''">Hủy</button>
-        </div>
-        <div id="uploadTmplResult"></div>
-      </div>
-    </div>`;
+function closePreview(){document.getElementById('previewModal').style.display='none';document.body.style.overflow='';}
+async function downloadFromPreview(){
+  const res=document.getElementById('previewDlResult');res.innerHTML='<div class="spin" style="display:inline-block"></div>';
+  try{const r=await fetch(API+'/pipeline/'+currentRun+'/export?export_mode=clean',{method:'POST'});if(!r.ok)throw new Error(await r.text());
+    const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+    const cd=r.headers.get('Content-Disposition')||'',nameRfc=(cd.match(/filename\*=UTF-8''([^;]+)/i)||[])[1],nameSimple=(cd.match(/filename="([^"]+)"/i)||[])[1];
+    const name=nameRfc?decodeURIComponent(nameRfc):(nameSimple||'report.docx');
+    a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);res.innerHTML='<span style="color:var(--green);font-size:10px">Da tai!</span>';toast('Thành công!','success');
+  }catch(e){res.innerHTML='<span style="color:var(--red);font-size:10px">'+e.message+'</span>';}
 }
-
-async function doUploadTemplate() {
-  const name = document.getElementById('tmplName').value.trim();
-  const desc = document.getElementById('tmplDesc').value.trim();
-  const file = document.getElementById('tmplFile').files[0];
-  if (!name || !file) { toast('Nhập tên và chọn file','error'); return; }
-  const form = new FormData();
-  form.append('file', file); form.append('name', name); form.append('description', desc);
-  document.getElementById('uploadTmplResult').innerHTML = '<div style="color:var(--text3);font-size:12px"><div class="spin"></div> Đang upload và phân tích...</div>';
-  try {
-    const r = await fetch(`${API}/templates/upload`, { method:'POST', body:form });
-    if (!r.ok) {
-      const e = await r.json();
-      const msg = e.detail || 'Upload failed';
-      if (r.status === 409) {
-        document.getElementById('uploadTmplResult').innerHTML =
-          `<div style="color:var(--gold);font-size:12px;line-height:1.6">⚠️ ${msg}
-            <div style="margin-top:8px;display:flex;gap:8px">
-              <button class="btn btn-ghost" style="font-size:10px" onclick="document.getElementById('tmplName').value='';document.getElementById('tmplName').focus()">✏️ Đổi tên</button>
-              <button class="btn btn-ghost" style="font-size:10px" onclick="switchSidebarTab('tmpl')">📋 Xem template cũ</button>
-            </div></div>`;
-      } else { throw new Error(msg); }
-      return;
-    }
-    const tmpl = await r.json();
-    document.getElementById('uploadTmplResult').innerHTML = `<div style="color:var(--green);font-size:12px">✅ Upload thành công! ${tmpl.fields.length} trường được phát hiện.</div>`;
-    await loadTemplates();
-    setTimeout(() => selectTemplate(tmpl.id), 800);
-  } catch(e) {
-    document.getElementById('uploadTmplResult').innerHTML = `<div style="color:var(--red);font-size:12px">✗ ${e.message}</div>`;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════
-function showFieldsPopup() {
-  const t = templates.find(x => x.id === selTmplId);
-  if (!t) return;
-  const TYPE_ICON = { date:'📅', number:'🔢', short:'✏️', sentence:'📝', paragraph:'📄' };
-  const modeBadge = f => f.field_mode === 'insert_below'
-    ? '<span style="background:rgba(6,214,160,.1);color:var(--green);font-size:8px;font-weight:700;padding:1px 5px;border-radius:6px;border:1px solid rgba(6,214,160,.25)">🟢 Chèn dưới</span>'
-    : '<span style="background:rgba(244,162,89,.1);color:var(--gold);font-size:8px;font-weight:700;padding:1px 5px;border-radius:6px;border:1px solid rgba(244,162,89,.25)">🟡 Thay thế</span>';
-  const overlay = document.createElement('div');
-  overlay.id = 'fieldsPopup';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center';
-  overlay.innerHTML = `
-    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
-      width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;
-      box-shadow:0 24px 64px rgba(0,0,0,.4);overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;
-        padding:14px 18px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--text)">🔍 Danh sách trường cần điền</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:1px">${t.name} · ${t.fields.length} trường</div>
-        </div>
-        <button onclick="document.getElementById('fieldsPopup').remove()"
-          style="background:none;border:1px solid var(--border2);color:var(--text3);width:28px;height:28px;border-radius:4px;font-size:14px;cursor:pointer">✕</button>
-      </div>
-      <div style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:6px">
-        ${t.fields.map((f,i) => `
-          <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rs);
-            padding:8px 12px;display:flex;align-items:flex-start;gap:10px">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
-              color:var(--accent);background:rgba(0,120,212,.1);border:1px solid rgba(0,120,212,.2);
-              padding:1px 6px;border-radius:3px;flex-shrink:0;margin-top:1px">#${(i+1).toString().padStart(2,'0')}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:11px;color:var(--text2);word-break:break-word;margin-bottom:4px">${f.placeholder}</div>
-              <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-                <span style="font-size:9px;color:var(--text3)">${TYPE_ICON[f.field_type]||'📝'} ${f.field_type||'sentence'}</span>
-                ${modeBadge(f)}
-              </div>
-            </div>
-          </div>`).join('')}
-      </div>
-      <div style="padding:10px 18px;border-top:1px solid var(--border2);background:var(--bg2);text-align:right;flex-shrink:0">
-        <button class="btn btn-ghost" onclick="document.getElementById('fieldsPopup').remove()">Đóng</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-}
-
-function setStep(n, state, label) {
-  const el = document.getElementById(`s${n}`);
-  const b  = document.getElementById(`b${n}`);
-  if (!el) return;
-  el.className = 'step ' + (state==='idle'?'':state==='active'?'active':state==='done'?'done':state==='err'?'err':'waiting');
-  if (b && label) {
-    const cls = {idle:'sb-idle',active:'sb-run',done:'sb-done',err:'sb-err',waiting:'sb-wait'}[state]||'sb-idle';
-    b.className = 'sbadge '+cls;
-    b.textContent = label;
-  }
-}
-
-function addLog(el, msg, cls='') {
-  if (!el) return;
-  const d = document.createElement('div');
-  if (cls) d.className = cls;
-  d.textContent = msg;
-  el.appendChild(d);
-  el.scrollTop = el.scrollHeight;
-}
-
-
-
-function autoResizeTa(ta) {
-  ta.style.height = 'auto';
-  ta.style.height = Math.max(36, ta.scrollHeight) + 'px';
-}
-
-function autoResizeIframe(iframe) {
-  try {
-    const h = iframe.contentDocument?.body?.scrollHeight;
-    if (h && h > 400) iframe.style.minHeight = h + 'px';
-  } catch {}
-}
-
-// ═══════════════════════════════════════════════════════════
-// PREVIEW MODAL
-// ═══════════════════════════════════════════════════════════
-async function openPreview() {
-  const modal = document.getElementById('previewModal');
-  modal.style.display = 'flex';
-  modal.style.flexDirection = 'column';
-  document.body.style.overflow = 'hidden';
-  const contentEl = document.getElementById('previewContent');
-  try {
-    const rs = await fetch(`${API}/pipeline/${currentRun}/results`);
-    const results = await rs.json();
-    const tmpl = templates.find(t => t.id === selTmplId) || {};
-    const high = results.filter(x=>x.confidence==='high').length;
-    const mid  = results.filter(x=>x.confidence==='mid').length;
-    const low  = results.filter(x=>x.confidence==='low').length;
-    document.getElementById('previewStats').innerHTML = `
-      <span style="background:rgba(6,214,160,.15);color:#06d6a0;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600">🟢 ${high} cao</span>
-      <span style="background:rgba(244,162,89,.15);color:#f4a259;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600">🟡 ${mid} TB</span>
-      <span style="background:rgba(239,71,111,.15);color:#ef476f;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600">🔴 ${low} thấp</span>`;
-    document.getElementById('previewTemplateName').textContent = tmpl.name || 'Báo cáo';
-  } catch {}
-  contentEl.innerHTML = `
-    <div style="width:794px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);min-height:1123px">
-      <iframe id="previewIframe" src="${API}/pipeline/${currentRun}/preview-html"
-        style="width:100%;min-height:1123px;border:none;display:block" onload="autoResizeIframe(this)"></iframe>
-    </div>`;
-}
-
-function closePreview() {
-  document.getElementById('previewModal').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-async function downloadFromPreview() {
-  const mode = document.getElementById('previewExportMode').value;
-  const res  = document.getElementById('previewDlResult');
-  res.innerHTML = '<div class="spin" style="display:inline-block"></div> Đang tạo file...';
-  try {
-    const r = await fetch(`${API}/pipeline/${currentRun}/export?export_mode=${mode}`, { method:'POST' });
-    if (!r.ok) throw new Error(await r.text());
-    const blob = await r.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    const cd   = r.headers.get('Content-Disposition')||'';
-    // Hỗ trợ cả filename*=UTF-8''... (RFC5987) lẫn filename="..."
-    const nameRfc    = cd.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-    const nameSimple = cd.match(/filename="([^"]+)"/i)?.[1];
-    const name = nameRfc ? decodeURIComponent(nameRfc) : (nameSimple || 'report.docx');
-    a.href=url; a.download=name; a.click();
-    URL.revokeObjectURL(url);
-    res.innerHTML = `<span style="color:var(--green);font-size:11px">✅ Đã tải: <strong>${name}</strong></span>`;
-    toast('✅ Tải xuống thành công!','success');
-  } catch(e) {
-    res.innerHTML = `<span style="color:var(--red);font-size:11px">✗ ${e.message}</span>`;
-  }
-}
-
-document.addEventListener('click', e => {
-  const modal = document.getElementById('previewModal');
-  if (e.target === modal) closePreview();
-});
-
-function toast(msg, type='info') {
-  document.querySelector('.toast')?.remove();
-  const t = Object.assign(document.createElement('div'), {className:`toast ${type}`,textContent:msg});
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(), 4000);
-}
+document.addEventListener('click',e=>{if(e.target===document.getElementById('previewModal'))closePreview();});
+function toast(msg,type='info'){document.querySelector('.toast')?.remove();const t=Object.assign(document.createElement('div'),{className:'toast '+type,textContent:msg});document.body.appendChild(t);setTimeout(()=>t.remove(),4000);}
 
 init();
 </script>
-
-<!-- Footer -->
-<footer style="margin-top:40px;padding:16px 28px;border-top:1px solid var(--border2);background:var(--bg2);text-align:center;font-size:11px;color:var(--text3)">
-  © 2025 <strong style="color:var(--text2)">Nhóm NCCN</strong> — Ban Công nghệ &nbsp;|&nbsp;
-  BIDV Report AI Agent &nbsp;|&nbsp; Powered by LangGraph · OpenAI GPT-4o
-</footer>
-
-<!-- Preview Modal -->
-<div id="previewModal" style="display:none;position:fixed;inset:0;z-index:1000;background:#2d2d2d">
-  <div style="height:52px;background:#1e1e1e;border-bottom:1px solid #3a3a3a;display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0">
-    <div style="display:flex;align-items:center;gap:10px;min-width:0">
-      <div style="width:28px;height:28px;background:#1565c0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📄</div>
-      <div style="overflow:hidden">
-        <div id="previewTemplateName" style="font-size:12px;font-weight:600;color:#e8e8e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-        <div style="font-size:10px;color:#888">Xem trước báo cáo</div>
-      </div>
-    </div>
-    <div id="previewStats" style="display:flex;gap:8px;margin-left:auto;margin-right:auto"></div>
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-<input type="hidden" id="previewExportMode" value="clean">
-      <button onclick="downloadFromPreview()" style="display:flex;align-items:center;gap:6px;background:#1565c0;border:none;color:#fff;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap" onmouseover="this.style.background='#1976d2'" onmouseout="this.style.background='#1565c0'">⬇ Tải xuống</button>
-      <div id="previewDlResult" style="font-size:10px;color:#aaa"></div>
-      <button onclick="closePreview()" style="background:none;border:1px solid #444;color:#aaa;width:30px;height:30px;border-radius:5px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0" onmouseover="this.style.background='#3a3a3a'" onmouseout="this.style.background='none'">✕</button>
-    </div>
-  </div>
-  <div style="height:calc(100vh - 52px);overflow-y:auto;background:#525659;padding:32px 0" id="previewScrollArea">
-    <div id="previewContent" style="max-width:794px;margin:0 auto"></div>
-  </div>
-</div>
-
 </body>
 </html>
